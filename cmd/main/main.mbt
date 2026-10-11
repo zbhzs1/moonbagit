@@ -78,21 +78,79 @@ fn create(args : Array[String]) -> Json raise {
 }
 
 ///|
+fn upgrade(args : Array[String]) -> Json raise {
+  guard args.length() == 4 else {
+    raise @bag.Invalid(
+      "upgrade requires SOURCE OUTPUT and --sha256, --sha512 or --both",
+    )
+  }
+  let algorithms = match args[3] {
+    "--sha256" => [@bag.Sha256]
+    "--sha512" => [@bag.Sha512]
+    "--both" => [@bag.Sha256, @bag.Sha512]
+    _ => raise @bag.Invalid("unsupported upgrade option")
+  }
+  ignore(@bag.plan_upgrade(scan(args[1]), algorithms))
+  let stage : String = @json.from_json(
+    host("prepare_upgrade", { "source": args[1], "output": args[2] }),
+  )
+  // Recheck the copied source before any manifests change.
+  let plan = @bag.plan_upgrade(scan(stage), algorithms)
+  ignore(
+    host("write_tags", {
+      "root": stage,
+      "tags": plan.payload_manifests.to_json(),
+    }),
+  )
+  let records = scan(stage).files.filter(f => {
+    !f.path.has_prefix("data/") &&
+    !(f.path.has_prefix("tagmanifest-") && !f.path.contains("/"))
+  })
+  let tags = @bag.create_tag_manifests(records, algorithms=plan.tag_algorithms)
+  ignore(
+    host("write_tags", {
+      "root": stage,
+      "tags": tags.to_json(),
+      "replace": true,
+    }),
+  )
+  let report = @bag.validate(scan(stage))
+  guard report.valid else {
+    raise @bag.Invalid(
+      "upgraded bag failed verification; staging retained: " + stage,
+    )
+  }
+  ignore(host("commit", { "root": stage, "output": args[2] }))
+  { "command": "upgrade", "output": args[2], "report": report.to_json() }
+}
+
+///|
 fn run(args : Array[String]) -> Json raise {
   guard args.length() > 0 else {
     raise @bag.Invalid("expected create or validate; use --help")
   }
   match args[0] {
     "create" => create(args)
+    "upgrade" => upgrade(args)
     "validate" => {
-      guard args.length() == 2 else {
-        raise @bag.Invalid("validate requires one bag directory")
+      guard args.length() == 2 || (args.length() == 4 && args[2] == "--profile") else {
+        raise @bag.Invalid("validate requires BAG [--profile FILE.json]")
       }
-      let report = @bag.validate(scan(args[1]))
-      if !report.valid {
-        exit_code(1)
+      let view = scan(args[1])
+      if args.length() == 4 {
+        let profile = @bag.parse_profile(host("metadata", { "path": args[3] }))
+        let report = @bag.validate_profile(view, profile)
+        if !report.conforms {
+          exit_code(1)
+        }
+        report.to_json()
+      } else {
+        let report = @bag.validate(view)
+        if !report.valid {
+          exit_code(1)
+        }
+        report.to_json()
       }
-      report.to_json()
     }
     _ => raise @bag.Invalid("unknown command: " + args[0])
   }
@@ -107,7 +165,10 @@ fn main {
       println(
         "node bin/moonbagit.mjs create SOURCE OUTPUT [--sha256|--sha512|--both] [--metadata FILE.json]",
       )
-      println("node bin/moonbagit.mjs validate BAG")
+      println("node bin/moonbagit.mjs validate BAG [--profile FILE.json]")
+      println(
+        "node bin/moonbagit.mjs upgrade SOURCE OUTPUT --sha256|--sha512|--both",
+      )
     } else {
       println(run(args).stringify())
     }

@@ -116,7 +116,7 @@ function scan(value) {
   return { files, directories: tree.directories, texts };
 }
 
-function prepare({ source, output }) {
+function prepare({ source, output }, wholeBag = false) {
   const root = directory(source);
   const destination = path.resolve(output);
   if (fs.existsSync(destination)) throw new Error('output must not already exist');
@@ -129,26 +129,32 @@ function prepare({ source, output }) {
   const inventory = walk(root);
   const stage = fs.mkdtempSync(path.join(parent, '.moonbagit-'));
   stages.set(stage, resolvedDestination);
-  fs.mkdirSync(path.join(stage, 'data'));
-  for (const relative of inventory.directories) fs.mkdirSync(path.join(stage, 'data', ...relative.split('/')), { recursive: true });
+  const content = wholeBag ? stage : path.join(stage, 'data');
+  if (!wholeBag) fs.mkdirSync(content);
+  for (const relative of inventory.directories) fs.mkdirSync(path.join(content, ...relative.split('/')), { recursive: true });
   for (const entry of inventory.files) {
     const before = fs.lstatSync(entry.absolute);
     if (!before.isFile() || before.isSymbolicLink()) throw new Error('source changed during copy');
-    const target = path.join(stage, 'data', ...entry.relative.split('/'));
+    const target = path.join(content, ...entry.relative.split('/'));
     fs.copyFileSync(entry.absolute, target, fs.constants.COPYFILE_EXCL);
     if (!sameFile(before, fs.lstatSync(entry.absolute))) throw new Error('source changed during copy');
   }
   return stage;
 }
 
-function writeTags({ root, tags }) {
+function writeTags({ root, tags, replace = false }) {
   const absolute = directory(root);
   if (!stages.has(absolute)) throw new Error('writes are restricted to this process staging directory');
   for (const [name, text] of Object.entries(tags)) {
     if (!/^(bagit|bag-info|(?:tag)?manifest-(sha256|sha512))\.txt$/.test(name) || typeof text !== 'string') {
       throw new Error('unexpected generated tag filename');
     }
-    fs.writeFileSync(path.join(absolute, name), text, { encoding: 'utf8', flag: 'wx' });
+    if (replace && !/^tagmanifest-(sha256|sha512)\.txt$/.test(name)) {
+      throw new Error('only staging tag manifests may be replaced');
+    }
+    const target = path.join(absolute, name);
+    if (replace && fs.existsSync(target) && !fs.lstatSync(target).isFile()) throw new Error('tag is not a regular file');
+    fs.writeFileSync(target, text, { encoding: 'utf8', flag: replace ? 'w' : 'wx' });
   }
   return null;
 }
@@ -175,6 +181,7 @@ export function installHost(args = process.argv.slice(2)) {
           case 'args': result = args; break;
           case 'scan': result = scan(value.root); break;
           case 'prepare': result = prepare(value); break;
+          case 'prepare_upgrade': result = prepare(value, true); break;
           case 'write_tags': result = writeTags(value); break;
           case 'commit': result = commit(value); break;
           case 'metadata': {

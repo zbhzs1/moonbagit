@@ -1,0 +1,24 @@
+{
+  "BagIt-Profile-Info": {
+    "Source-Organization": "MoonBagIt example repository",
+    "External-Description": "Receiving rules for a reproducible measurement dataset",
+    "Version": "1.0.0",
+    "BagIt-Profile-Identifier": "https://github.com/zbhzs1/moonbagit/examples/research-profile",
+    "BagIt-Profile-Version": "1.4.0"
+  },
+  "Bag-Info": {
+    "Source-Organization": { "required": true, "repeatable": false },
+    "Dataset-Type": { "required": true, "repeatable": false, "values": ["measurement"] }
+  },
+  "Manifests-Required": ["sha512"],
+  "Manifests-Allowed": ["sha256", "sha512"],
+  "Tag-Manifests-Required": ["sha512"],
+  "Tag-Manifests-Allowed": ["sha256", "sha512"],
+  "Allow-Fetch.txt": false,
+  "Serialization": "forbidden",
+  "Accept-BagIt-Version": ["1.0"],
+  "Tag-Files-Required": ["bag-info.txt"],
+  "Tag-Files-Allowed": ["bagit.txt", "bag-info.txt", "manifest-*.txt", "tagmanifest-*.txt"],
+  "Payload-Files-Required": ["data/readme.txt", "data/nested/"],
+  "Payload-Files-Allowed": ["data/*"]
+}
