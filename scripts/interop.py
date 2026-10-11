@@ -2,6 +2,7 @@
 import argparse
 import json
 import os
+import hashlib
 from pathlib import Path
 import subprocess
 import sys
@@ -198,6 +199,105 @@ class Interop(unittest.TestCase):
         output = self.base / "bag"
         run("create", source, output, "--metadata", metadata)
         self.assertEqual(bagit.Bag(str(output)).info["Contact-Name"], ["First", "Second"])
+
+    def test_upgrade_preserves_bytes_and_independent_validity(self):
+        _, original = self.moon_bag("--sha256")
+        before = {p.relative_to(original): p.read_bytes() for p in original.rglob("*") if p.is_file()}
+        upgraded = self.base / "upgraded"
+        report = run("upgrade", original, upgraded, "--sha512")["report"]
+        self.assertTrue(report["valid"])
+        self.assertTrue(bagit.Bag(str(upgraded)).validate())
+        for relative, content in before.items():
+            self.assertEqual((original / relative).read_bytes(), content)
+            if not str(relative).startswith("tagmanifest-"):
+                self.assertEqual((upgraded / relative).read_bytes(), content)
+        self.assertTrue((upgraded / "tagmanifest-sha256.txt").exists())
+        for algorithm in ("sha256", "sha512"):
+            text = (upgraded / f"tagmanifest-{algorithm}.txt").read_text(encoding="utf-8")
+            self.assertIn("manifest-sha256.txt", text)
+            self.assertIn("manifest-sha512.txt", text)
+
+    def test_upgrade_preserves_arbitrary_binary_tags(self):
+        _, original = self.moon_bag("--sha256")
+        (original / "receipt.bin").write_bytes(b"\x00\xff\x80")
+        upgraded = self.base / "upgraded"
+        run("upgrade", original, upgraded, "--both")
+        self.assertEqual((upgraded / "receipt.bin").read_bytes(), b"\x00\xff\x80")
+        self.assertTrue(bagit.Bag(str(upgraded)).validate())
+        for algorithm in ("sha256", "sha512"):
+            digest = hashlib.new(algorithm, b"\x00\xff\x80").hexdigest()
+            self.assertIn(digest + "  receipt.bin", (upgraded / f"tagmanifest-{algorithm}.txt").read_text(encoding="utf-8"))
+
+    def test_upgrade_refuses_corruption_without_resigning(self):
+        _, original = self.moon_bag()
+        (original / "data" / "100percent.txt").write_bytes(b"corrupt")
+        target = self.base / "upgraded"
+        self.assertIn("invalid", run("upgrade", original, target, "--sha512", code=2)["error"])
+        self.assertFalse(target.exists())
+
+    def test_upgrade_no_overwrite_and_idempotent_manifests(self):
+        _, original = self.moon_bag()
+        target = self.base / "upgraded"
+        run("upgrade", original, target, "--both")
+        for p in original.rglob("*"):
+            if p.is_file():
+                self.assertEqual(p.read_bytes(), (target / p.relative_to(original)).read_bytes())
+        self.assertIn("error", run("upgrade", original, target, "--both", code=2))
+
+    def test_upgrade_inside_source_is_refused(self):
+        _, original = self.moon_bag()
+        self.assertIn("error", run("upgrade", original, original / "copy", "--sha512", code=2))
+        self.assertFalse((original / "copy").exists())
+
+    def research_bag(self):
+        output = self.base / "research-bag"
+        run("create", ROOT / "examples" / "payload", output, "--both", "--metadata", ROOT / "examples" / "research-metadata.json")
+        return output
+
+    def test_research_receiving_profile(self):
+        output = self.research_bag()
+        report = run("validate", output, "--profile", ROOT / "examples" / "research-profile.json")
+        self.assertTrue(report["bag"]["valid"])
+        self.assertTrue(report["conforms"])
+        self.assertEqual(report["diagnostics"], [])
+        self.assertTrue(bagit.Bag(str(output)).validate())
+
+    def test_profile_rejects_wrong_identifier_on_otherwise_valid_bag(self):
+        _, output = self.moon_bag()
+        result = run("validate", output, "--profile", ROOT / "examples" / "research-profile.json", code=1)
+        self.assertTrue(result["bag"]["valid"])
+        self.assertFalse(result["conforms"])
+        self.assertTrue(any(d["code"] == "profile_identifier" for d in result["diagnostics"]))
+
+    def test_unknown_profile_constraint_fails_closed(self):
+        output = self.research_bag()
+        profile = json.loads((ROOT / "examples" / "research-profile.json").read_text(encoding="utf-8"))
+        profile["Future-Constraint"] = True
+        path = self.base / "profile.json"
+        path.write_text(json.dumps(profile), encoding="utf-8")
+        self.assertIn("unknown profile", run("validate", output, "--profile", path, code=2)["error"])
+
+    def test_serialized_profile_never_silently_passes_directory(self):
+        output = self.research_bag()
+        profile = json.loads((ROOT / "examples" / "research-profile.json").read_text(encoding="utf-8"))
+        profile["Serialization"] = "required"
+        profile["Accept-Serialization"] = ["application/zip"]
+        path = self.base / "profile.json"
+        path.write_text(json.dumps(profile), encoding="utf-8")
+        result = run("validate", output, "--profile", path, code=1)
+        self.assertTrue(any(d["code"] == "profile_serialization" for d in result["diagnostics"]))
+
+    def test_streaming_large_binary_file(self):
+        source = self.base / "source"
+        source.mkdir()
+        chunk = bytes(range(256)) * 4096
+        with (source / "large.bin").open("wb") as stream:
+            for _ in range(20):
+                stream.write(chunk)
+        output = self.base / "bag"
+        result = run("create", source, output, "--both")["report"]
+        self.assertEqual(result["payload_bytes"], str(20 * len(chunk)))
+        self.assertTrue(bagit.Bag(str(output)).validate())
 
 
 if __name__ == "__main__":
