@@ -43,9 +43,25 @@ Public repository: https://github.com/zbhzs1/moonbagit
 
 CI: https://github.com/zbhzs1/moonbagit/actions/workflows/ci.yml
 
-Remote run and registry/consumer identities are recorded after their actual
-completion. A workflow file and publish dry-run alone are not successful CI or
-publication evidence. Consult the latest run for the exact source revision.
+The source revision `e1be6ec9d8b5a89eed084cd8571849776e7953f5` passed both
+Linux and Windows jobs in [run 38140063677](https://github.com/zbhzs1/moonbagit/actions/runs/38140063677).
+Linux ran all 28 interop scenarios without skips, including newline filenames
+and symlink rejection. Later documentation/consumer-test commits can have
+different run identities; consult the latest run for the current revision.
+
+Mooncakes `zbhzs1/moonbagit@0.1.0` was published with server `200 OK` at
+2026-10-11T12:42:31Z. The registry records its SHA-256 as
+`7cde06e5293ddae134b880c6a515fb6c92576c9c47e2e090597040814bfbfe18`, matching
+the locally submitted ZIP. The package is not yanked and declares MIT.
+
+A separate consumer project installed this exact version from the registry,
+with no local path override, and ran declaration parsing, empty-bag creation,
+profile checks, upgrade planning and portability lint on JS and WASM-GC.
+`python scripts/consumer.py` reproduces this fresh-directory installation and
+is included in subsequent CI runs. No local credentials are necessary to
+install this public package. Registry release contents correspond to the
+release source revision above; documentation added after publication does not
+change the already published ZIP.
 
 ## Remaining work
 

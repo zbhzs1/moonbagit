@@ -62,7 +62,7 @@ The root MoonBit package exports typed models, `parse_declaration`,
 It also exports `parse_profile`, `validate_profile`, `plan_upgrade`, and
 `lint_portability`.
 
-After publication, add the library to an independent MoonBit project:
+Add the published library to an independent MoonBit project:
 
 ```powershell
 moon add zbhzs1/moonbagit@0.1.0
@@ -170,6 +170,7 @@ git -c core.autocrlf=false clone https://github.com/LibraryOfCongress/bagit-conf
 git -C ../bagit-conformance-suite checkout 9ab48705c06664f9f419ca740c728c9f89a61e7c
 python scripts/conformance.py ../bagit-conformance-suite
 python scripts/benchmark.py --files 10000 --bytes 1024
+python scripts/consumer.py
 ```
 
 The independent [Library of Congress bagit-python](https://github.com/LibraryOfCongress/bagit-python)

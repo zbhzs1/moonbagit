@@ -46,3 +46,4 @@ jobs:
         run: git -C ../bagit-conformance-suite checkout 9ab48705c06664f9f419ca740c728c9f89a61e7c
       - run: python scripts/conformance.py ../bagit-conformance-suite
       - run: python scripts/benchmark.py --files 1000 --bytes 1024
+      - run: python scripts/consumer.py
