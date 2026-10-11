@@ -132,6 +132,13 @@ fn run(args : Array[String]) -> Json raise {
   match args[0] {
     "create" => create(args)
     "upgrade" => upgrade(args)
+    "lint" => {
+      guard args.length() == 2 else {
+        raise @bag.Invalid("lint requires one bag directory")
+      }
+      let diagnostics = @bag.lint_portability(scan(args[1]))
+      { "command": "lint", "diagnostics": diagnostics.to_json() }
+    }
     "validate" => {
       guard args.length() == 2 || (args.length() == 4 && args[2] == "--profile") else {
         raise @bag.Invalid("validate requires BAG [--profile FILE.json]")
@@ -166,6 +173,7 @@ fn main {
         "node bin/moonbagit.mjs create SOURCE OUTPUT [--sha256|--sha512|--both] [--metadata FILE.json]",
       )
       println("node bin/moonbagit.mjs validate BAG [--profile FILE.json]")
+      println("node bin/moonbagit.mjs lint BAG")
       println(
         "node bin/moonbagit.mjs upgrade SOURCE OUTPUT --sha256|--sha512|--both",
       )

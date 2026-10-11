@@ -159,7 +159,7 @@ test "profile fetch rules and inconsistent profile rejection" {
   assert_true(
     has_profile_code(validate_profile(view, required), "profile_fetch_required"),
   )
-  view.files.push({ path: "fetch.txt", size: 0L, digests: Map([]) })
+  view.files.push({ path: "fetch.txt", size: 0L, digests: Map([]), })
   view.texts["fetch.txt"] = ""
   let forbidden = parse_profile(profile_field("Allow-Fetch.txt", false))
   assert_true(
@@ -293,17 +293,30 @@ test "profile allowed paths reject extras even with valid checksums" {
 }
 
 ///|
+test "profile checks empty payload directories as well as files" {
+  let view = profiled_fixture()
+  view.directories.push("data/unexpected")
+  let profile = parse_profile(
+    profile_field("Payload-Files-Allowed", ["data/example.txt"]),
+  )
+  let report = validate_profile(view, profile)
+  assert_true(report.bag.valid)
+  assert_true(has_profile_code(report, "profile_directory_forbidden"))
+  assert_false(report.conforms)
+}
+
+///|
 test "Data-Empty supports exactly one empty file or no files" {
   let profile = parse_profile(profile_field("Data-Empty", true))
   let view = profiled_fixture()
   assert_true(
     has_profile_code(validate_profile(view, profile), "profile_data_empty"),
   )
-  view.files[0] = { ..view.files[0], size: 0L }
+  view.files[0] = { ..view.files[0], size: 0L, }
   assert_false(
     has_profile_code(validate_profile(view, profile), "profile_data_empty"),
   )
-  view.files.push({ ..view.files[0], path: "data/second" })
+  view.files.push({ ..view.files[0], path: "data/second", })
   assert_true(
     has_profile_code(validate_profile(view, profile), "profile_data_empty"),
   )
@@ -312,7 +325,7 @@ test "Data-Empty supports exactly one empty file or no files" {
 ///|
 test "profile never turns a corrupt bag into a conforming bag" {
   let view = profiled_fixture()
-  view.files[0] = { ..view.files[0], digests: Map([]) }
+  view.files[0] = { ..view.files[0], digests: Map([]), }
   let report = validate_profile(view, parse_profile(profile_fixture_json()))
   assert_true(report.diagnostics.is_empty())
   assert_false(report.conforms)
@@ -346,7 +359,7 @@ test "upgrade existing algorithms is idempotent and retains tag algorithms" {
 ///|
 test "upgrade refuses invalid sources and duplicate requested algorithms" {
   let view = fixture()
-  view.files[0] = { ..view.files[0], digests: Map([]) }
+  view.files[0] = { ..view.files[0], digests: Map([]), }
   rejects(() => ignore(plan_upgrade(view, [Sha512])))
   rejects(() => ignore(plan_upgrade(fixture(), [])))
   rejects(() => ignore(plan_upgrade(fixture(), [Sha512, Sha512])))

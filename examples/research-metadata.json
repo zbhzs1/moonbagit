@@ -1,5 +1,5 @@
 [
   { "label": "Source-Organization", "value": "MoonBagIt example repository" },
   { "label": "Dataset-Type", "value": "measurement" },
-  { "label": "BagIt-Profile-Identifier", "value": "https://github.com/zbhzs1/moonbagit/examples/research-profile" }
+  { "label": "BagIt-Profile-Identifier", "value": "https://raw.githubusercontent.com/zbhzs1/moonbagit/main/examples/research-profile.json" }
 ]

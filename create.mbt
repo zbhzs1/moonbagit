@@ -76,7 +76,7 @@ pub fn create_tags(
   guard !fields.any(f => f.label[:].to_lower().to_owned() == "payload-oxum") else {
     raise Invalid("Payload-Oxum is computed, not supplied by the caller")
   }
-  fields.push({ label: "Payload-Oxum", value: payload_oxum(payload) })
+  fields.push({ label: "Payload-Oxum", value: payload_oxum(payload), })
   tags["bag-info.txt"] = render_metadata(fields)
   for alg in algorithms {
     tags["manifest-" + alg.name() + ".txt"] = render_manifest(

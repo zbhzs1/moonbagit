@@ -27,7 +27,7 @@ fn main {
       .collect()
     let files = payload.copy()
     files.append(tags_on_disk)
-    let report = @bag.validate({ files, directories: ["data"], texts: tags })
+    let report = @bag.validate({ files, directories: ["data"], texts: tags, })
     println("complete=\{report.complete}; valid=\{report.valid}")
   } catch {
     @bag.Invalid(message) => println(message)

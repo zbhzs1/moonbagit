@@ -39,7 +39,7 @@ pub fn parse_declaration(text : String) -> Declaration raise FormatError {
   guard encoding[:].to_upper().to_owned() == "UTF-8" else {
     raise Invalid("only UTF-8 tag files are supported")
   }
-  { version: "1.0", encoding: "UTF-8" }
+  { version: "1.0", encoding: "UTF-8", }
 }
 
 ///|
@@ -52,7 +52,7 @@ pub fn encode_path(path : String) -> String {
 
 ///|
 pub fn decode_path(path : String) -> String raise FormatError {
-  let out = StringBuilder::new()
+  let out = StringBuilder()
   let mut i = 0
   let mut start = 0
   while i < path.length() {
@@ -151,14 +151,14 @@ pub fn parse_manifest(
       raise Invalid("duplicate manifest path: " + path)
     }
     seen[path] = true
-    entries.push({ path, checksum: checksum[:].to_lower().to_owned() })
+    entries.push({ path, checksum: checksum[:].to_lower().to_owned(), })
   }
-  { name, algorithm: alg, tag, entries }
+  { name, algorithm: alg, tag, entries, }
 }
 
 ///|
 pub fn render_manifest(entries : Array[Entry]) -> String raise FormatError {
-  let out = StringBuilder::new()
+  let out = StringBuilder()
   let seen : Map[String, Bool] = Map([])
   for entry in entries {
     check_path(entry.path)
@@ -201,7 +201,7 @@ pub fn parse_metadata(text : String) -> Array[Metadata] raise FormatError {
       guard colon + 1 < row.length() && linear_unit(row[colon + 1]) else {
         raise Invalid("metadata requires whitespace after colon")
       }
-      result.push({ label, value: row[colon + 2:].to_owned() })
+      result.push({ label, value: row[colon + 2:].to_owned(), })
     }
   }
   result
@@ -209,7 +209,7 @@ pub fn parse_metadata(text : String) -> Array[Metadata] raise FormatError {
 
 ///|
 pub fn render_metadata(fields : Array[Metadata]) -> String raise FormatError {
-  let out = StringBuilder::new()
+  let out = StringBuilder()
   for field in fields {
     guard field.label != "" &&
       !field.label.contains(":") &&
@@ -283,7 +283,7 @@ pub fn parse_fetch(text : String) -> Array[FetchEntry] raise FormatError {
     }
     guard !seen.contains(path) else { raise Invalid("duplicate fetch path") }
     seen[path] = true
-    result.push({ url, size, path })
+    result.push({ url, size, path, })
   }
   result
 }

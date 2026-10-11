@@ -210,7 +210,7 @@ pub fn parse_profile(json : Json) -> Profile raise FormatError {
   let metadata : Array[MetadataRule] = []
   if fields.get("Bag-Info") is Some(value) {
     for label, rule in profile_object(value) {
-      ignore(render_metadata([{ label, value: "check" }]))
+      ignore(render_metadata([{ label, value: "check", }]))
       let rule = profile_object(rule)
       profile_keys(rule, ["required", "repeatable", "values", "description"])
       if rule.contains("description") {
@@ -353,7 +353,7 @@ pub fn validate_profile(view : BagView, profile : Profile) -> ProfileReport {
   match view.texts.get("bagit.txt") {
     Some(text) => {
       let declaration = parse_declaration(text) catch {
-        Invalid(_) => { version: "", encoding: "" }
+        Invalid(_) => { version: "", encoding: "", }
       }
       if !profile.bag_versions.contains(declaration.version) {
         issue(
@@ -475,5 +475,13 @@ pub fn validate_profile(view : BagView, profile : Profile) -> ProfileReport {
       )
     }
   }
-  { conforms: bag.valid && diagnostics.is_empty(), bag, diagnostics }
+  for directory in view.directories {
+    if directory.has_prefix("data/") &&
+      !profile.payload_allowed.any(p => profile_path_matches(p, directory + "/")) {
+      issue(
+        diagnostics, "profile_directory_forbidden", directory, "payload directory is not allowed by profile",
+      )
+    }
+  }
+  { conforms: bag.valid && diagnostics.is_empty(), bag, diagnostics, }
 }

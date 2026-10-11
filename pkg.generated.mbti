@@ -19,6 +19,8 @@ pub fn decode_path(String) -> String raise FormatError
 
 pub fn encode_path(String) -> String
 
+pub fn lint_portability(BagView) -> Array[Diagnostic]
+
 pub fn parse_declaration(String) -> Declaration raise FormatError
 
 pub fn parse_fetch(String) -> Array[FetchEntry] raise FormatError
@@ -27,7 +29,13 @@ pub fn parse_manifest(String, String) -> Manifest raise FormatError
 
 pub fn parse_metadata(String) -> Array[Metadata] raise FormatError
 
+pub fn parse_profile(Json) -> Profile raise FormatError
+
 pub fn payload_oxum(Array[FileRecord]) -> String raise FormatError
+
+pub fn plan_upgrade(BagView, Array[Algorithm]) -> UpgradePlan raise FormatError
+
+pub fn profile_path_matches(String, String) -> Bool
 
 pub fn render_manifest(Array[Entry]) -> String raise FormatError
 
@@ -35,29 +43,42 @@ pub fn render_metadata(Array[Metadata]) -> String raise FormatError
 
 pub fn validate(BagView) -> Report
 
+pub fn validate_profile(BagView, Profile) -> ProfileReport
+
 // Errors
 pub(all) suberror FormatError {
   Invalid(String)
 } derive(Eq, @debug.Debug)
+pub fn FormatError::equal(Self, Self) -> Bool
+pub fn FormatError::not_equal(Self, Self) -> Bool
+pub fn FormatError::to_repr(Self) -> @debug.Repr
 
 // Types and methods
 pub(all) enum Algorithm {
   Sha256
   Sha512
 } derive(Eq, @debug.Debug)
+pub fn Algorithm::equal(Self, Self) -> Bool
 pub fn Algorithm::hex_length(Self) -> Int
 pub fn Algorithm::name(Self) -> String
+pub fn Algorithm::not_equal(Self, Self) -> Bool
+pub fn Algorithm::to_repr(Self) -> @debug.Repr
 
 pub(all) struct BagView {
   files : Array[FileRecord]
   directories : Array[String]
   texts : Map[String, String]
 } derive(@debug.Debug, @json.FromJson)
+pub fn BagView::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn BagView::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Declaration {
   version : String
   encoding : String
 } derive(Eq, @debug.Debug)
+pub fn Declaration::equal(Self, Self) -> Bool
+pub fn Declaration::not_equal(Self, Self) -> Bool
+pub fn Declaration::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Diagnostic {
   severity : Severity
@@ -65,23 +86,34 @@ pub(all) struct Diagnostic {
   path : String
   message : String
 } derive(ToJson, @debug.Debug)
+pub fn Diagnostic::to_json(Self) -> Json
+pub fn Diagnostic::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Entry {
   path : String
   checksum : String
 } derive(Eq, @debug.Debug)
+pub fn Entry::equal(Self, Self) -> Bool
+pub fn Entry::not_equal(Self, Self) -> Bool
+pub fn Entry::to_repr(Self) -> @debug.Repr
 
 pub(all) struct FetchEntry {
   url : String
   size : Int64?
   path : String
 } derive(Eq, @debug.Debug)
+pub fn FetchEntry::equal(Self, Self) -> Bool
+pub fn FetchEntry::not_equal(Self, Self) -> Bool
+pub fn FetchEntry::to_repr(Self) -> @debug.Repr
 
 pub(all) struct FileRecord {
   path : String
   size : Int64
   digests : Map[String, String]
 } derive(ToJson, @debug.Debug, @json.FromJson)
+pub fn FileRecord::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn FileRecord::to_json(Self) -> Json
+pub fn FileRecord::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Manifest {
   name : String
@@ -89,11 +121,56 @@ pub(all) struct Manifest {
   tag : Bool
   entries : Array[Entry]
 } derive(Eq, @debug.Debug)
+pub fn Manifest::equal(Self, Self) -> Bool
+pub fn Manifest::not_equal(Self, Self) -> Bool
+pub fn Manifest::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Metadata {
   label : String
   value : String
 } derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+pub fn Metadata::equal(Self, Self) -> Bool
+pub fn Metadata::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn Metadata::not_equal(Self, Self) -> Bool
+pub fn Metadata::to_json(Self) -> Json
+pub fn Metadata::to_repr(Self) -> @debug.Repr
+
+pub(all) struct MetadataRule {
+  label : String
+  required : Bool
+  repeatable : Bool
+  values : Array[String]
+} derive(@debug.Debug)
+pub fn MetadataRule::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Profile {
+  identifier : String
+  version : String
+  metadata : Array[MetadataRule]
+  manifests_required : Array[String]
+  manifests_allowed : Array[String]?
+  tag_manifests_required : Array[String]
+  tag_manifests_allowed : Array[String]?
+  allow_fetch : Bool
+  require_fetch : Bool
+  data_empty : Bool
+  serialization : String
+  accepted_serializations : Array[String]
+  bag_versions : Array[String]
+  tags_required : Array[String]
+  tags_allowed : Array[String]
+  payload_required : Array[String]
+  payload_allowed : Array[String]
+} derive(@debug.Debug)
+pub fn Profile::to_repr(Self) -> @debug.Repr
+
+pub(all) struct ProfileReport {
+  conforms : Bool
+  bag : Report
+  diagnostics : Array[Diagnostic]
+} derive(ToJson, @debug.Debug)
+pub fn ProfileReport::to_json(Self) -> Json
+pub fn ProfileReport::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Report {
   complete : Bool
@@ -104,13 +181,24 @@ pub(all) struct Report {
   diagnostics : Array[Diagnostic]
 } derive(ToJson, @debug.Debug)
 pub fn Report::has_code(Self, String) -> Bool
+pub fn Report::to_json(Self) -> Json
+pub fn Report::to_repr(Self) -> @debug.Repr
 
 pub(all) enum Severity {
   Error
   Warning
 } derive(Eq, ToJson, @debug.Debug)
+pub fn Severity::equal(Self, Self) -> Bool
+pub fn Severity::not_equal(Self, Self) -> Bool
+pub fn Severity::to_json(Self) -> Json
+pub fn Severity::to_repr(Self) -> @debug.Repr
+
+pub(all) struct UpgradePlan {
+  payload_manifests : Map[String, String]
+  tag_algorithms : Array[Algorithm]
+} derive(@debug.Debug)
+pub fn UpgradePlan::to_repr(Self) -> @debug.Repr
 
 // Type aliases
 
 // Traits
-

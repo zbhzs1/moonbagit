@@ -1,6 +1,6 @@
 ///|
 fn repeated(c : String, length : Int) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder()
   for _ in 0..<length {
     out.write_string(c)
   }
@@ -39,7 +39,7 @@ fn fixture() -> BagView raise {
       digests: { "sha256": repeated("c", 64), "sha512": repeated("d", 128) },
     })
   }
-  { files, directories: ["data"], texts }
+  { files, directories: ["data"], texts, }
 }
 
 ///|
@@ -168,12 +168,12 @@ test "manifest rejects duplicate decoded filenames" {
 ///|
 test "manifest writer rejects digest and path injection" {
   rejects(() => {
-    ignore(render_manifest([{ path: "data/a", checksum: "bad\nline" }]))
+    ignore(render_manifest([{ path: "data/a", checksum: "bad\nline", }]))
   })
   rejects(() => {
-    ignore(render_manifest([{ path: "../a", checksum: repeated("a", 64) }]))
+    ignore(render_manifest([{ path: "../a", checksum: repeated("a", 64), }]))
   })
-  let entry : Entry = { path: "data/a", checksum: repeated("a", 64) }
+  let entry : Entry = { path: "data/a", checksum: repeated("a", 64), }
   rejects(() => ignore(render_manifest([entry, entry])))
 }
 
@@ -204,10 +204,10 @@ test "metadata rejects malformed labels and orphan continuations" {
 test "metadata writer rejects injection" {
   for
     field in [
-      { label: "bad:name", value: "x" },
-      { label: "bad\nname", value: "x" },
-      { label: "bad ", value: "x" },
-      { label: "Name", value: "x\ry" },
+      { label: "bad:name", value: "x", },
+      { label: "bad\nname", value: "x", },
+      { label: "bad ", value: "x", },
+      { label: "Name", value: "x\ry", },
     ] {
     rejects(() => ignore(render_metadata([field])))
   }
@@ -274,7 +274,7 @@ test "missing payload is incomplete" {
 ///|
 test "extra payload must be in every payload manifest" {
   let view = fixture()
-  view.files.push({ ..view.files[0], path: "data/extra" })
+  view.files.push({ ..view.files[0], path: "data/extra", })
   let report = validate(view)
   assert_false(report.complete)
   assert_true(report.has_code("payload_coverage"))
@@ -343,7 +343,7 @@ test "different optional tag coverage is a recommendation warning" {
 
 ///|
 test "required declaration directory and manifest diagnostics" {
-  let report = validate({ files: [], directories: [], texts: Map([]) })
+  let report = validate({ files: [], directories: [], texts: Map([]), })
   assert_true(report.has_code("missing_declaration"))
   assert_true(report.has_code("missing_data"))
   assert_true(report.has_code("missing_manifest"))
@@ -352,7 +352,7 @@ test "required declaration directory and manifest diagnostics" {
 ///|
 test "host must supply valid checksums rather than empty strings" {
   let view = fixture()
-  view.files[0] = { ..view.files[0], digests: Map([]) }
+  view.files[0] = { ..view.files[0], digests: Map([]), }
   let report = validate(view)
   assert_true(report.complete)
   assert_false(report.valid)
@@ -362,7 +362,7 @@ test "host must supply valid checksums rather than empty strings" {
 ///|
 test "unprotected arbitrary tag is warning not rejection" {
   let view = fixture()
-  view.files.push({ path: "extra.bin", size: 0L, digests: Map([]) })
+  view.files.push({ path: "extra.bin", size: 0L, digests: Map([]), })
   let report = validate(view)
   assert_true(report.valid)
   assert_true(report.has_code("unprotected_tag"))
@@ -411,7 +411,7 @@ test "Payload-Oxum accepts leading zeroes as numeric counts" {
 ///|
 test "fetch is offline and pending files remain incomplete" {
   let view = fixture()
-  view.files.push({ path: "fetch.txt", size: 40L, digests: Map([]) })
+  view.files.push({ path: "fetch.txt", size: 40L, digests: Map([]), })
   view.texts["fetch.txt"] = "https://example.org/a 1 data/absent\n"
   let report = validate(view)
   assert_false(report.complete)
@@ -437,13 +437,13 @@ test "creator rejects unsupported contracts" {
   rejects(() => {
     ignore(
       create_tags([view.files[0]], metadata=[
-        { label: "payload-oxum", value: "1.1" },
+        { label: "payload-oxum", value: "1.1", },
       ]),
     )
   })
-  rejects(() => ignore(create_tags([{ ..view.files[0], path: "other" }])))
-  rejects(() => ignore(create_tags([{ ..view.files[0], size: -1L }])))
-  rejects(() => ignore(create_tags([{ ..view.files[0], digests: Map([]) }])))
+  rejects(() => ignore(create_tags([{ ..view.files[0], path: "other", }])))
+  rejects(() => ignore(create_tags([{ ..view.files[0], size: -1L, }])))
+  rejects(() => ignore(create_tags([{ ..view.files[0], digests: Map([]), }])))
 }
 
 ///|
@@ -452,17 +452,17 @@ test "creator rejects duplicate payload and tag manifest recursion" {
   rejects(() => ignore(create_tags([file, file])))
   rejects(() => ignore(create_tag_manifests([file])))
   rejects(() => {
-    ignore(create_tag_manifests([{ ..file, path: "tagmanifest-sha512.txt" }]))
+    ignore(create_tag_manifests([{ ..file, path: "tagmanifest-sha512.txt", }]))
   })
-  rejects(() => ignore(create_tag_manifests([{ ..file, path: "bagit.txt" }])))
+  rejects(() => ignore(create_tag_manifests([{ ..file, path: "bagit.txt", }])))
 }
 
 ///|
 test "creator sorts manifest entries for deterministic output" {
   let file = fixture().files[0]
   let tags = create_tags([
-    { ..file, path: "data/z" },
-    { ..file, path: "data/a" },
+    { ..file, path: "data/z", },
+    { ..file, path: "data/a", },
   ])
   let manifest = parse_manifest(
     "manifest-sha512.txt",
@@ -478,8 +478,8 @@ test "creator prevents byte count overflow" {
   rejects(() => {
     ignore(
       payload_oxum([
-        { ..file, size: 9223372036854775807L },
-        { ..file, size: 1L },
+        { ..file, size: 9223372036854775807L, },
+        { ..file, size: 1L, },
       ]),
     )
   })
@@ -490,14 +490,14 @@ test "large synthetic inventory verifies every manifest entry" {
   let digests : Map[String, String] = { "sha256": repeated("a", 64) }
   let payload : Array[FileRecord] = []
   for i in 0..<10000 {
-    payload.push({ path: "data/file-\{i}.bin", size: 1L, digests })
+    payload.push({ path: "data/file-\{i}.bin", size: 1L, digests, })
   }
   let texts = create_tags(payload, algorithms=[Sha256])
   let files = payload.copy()
   for path, text in texts {
-    files.push({ path, size: text.length().to_int64(), digests: Map([]) })
+    files.push({ path, size: text.length().to_int64(), digests: Map([]), })
   }
-  let report = validate({ files, directories: ["data"], texts })
+  let report = validate({ files, directories: ["data"], texts, })
   assert_true(report.valid)
   assert_eq(report.verified_checksums, 10000)
   assert_eq(report.payload_bytes, 10000L)

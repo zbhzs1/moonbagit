@@ -3,7 +3,7 @@
     "Source-Organization": "MoonBagIt example repository",
     "External-Description": "Receiving rules for a reproducible measurement dataset",
     "Version": "1.0.0",
-    "BagIt-Profile-Identifier": "https://github.com/zbhzs1/moonbagit/examples/research-profile",
+    "BagIt-Profile-Identifier": "https://raw.githubusercontent.com/zbhzs1/moonbagit/main/examples/research-profile.json",
     "BagIt-Profile-Version": "1.4.0"
   },
   "Bag-Info": {

@@ -37,5 +37,5 @@ pub fn plan_upgrade(
       tag_algorithms.push(alg)
     }
   }
-  { payload_manifests, tag_algorithms }
+  { payload_manifests, tag_algorithms, }
 }
