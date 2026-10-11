@@ -1,5 +1,7 @@
 # MoonBagIt
 
+[![CI](https://github.com/zbhzs1/moonbagit/actions/workflows/ci.yml/badge.svg)](https://github.com/zbhzs1/moonbagit/actions/workflows/ci.yml)
+
 BagIt 1.0 archive-directory creation and validation for MoonBit, based on
 [RFC 8493](https://www.rfc-editor.org/rfc/rfc8493.html).
 
@@ -10,7 +12,8 @@ JSON evidence pack, backup database, ZIP file, or network transfer service.
 ## Quick Start
 
 Install the [MoonBit toolchain](https://www.moonbitlang.com/download/) and Node.js
-22 or later. This development snapshot was tested with `moon 0.1.20260713` and
+22 or later. Use MoonBit `moon 0.1.20260920` or later. This release was tested with
+`moonc v0.10.14` and
 Node.js 24.14.1.
 
 ```powershell
@@ -56,6 +59,19 @@ or protect against an attacker who can rewrite files and manifests together.
 The root MoonBit package exports typed models, `parse_declaration`,
 `parse_manifest`, `parse_metadata`, `parse_fetch`, `encode_path`, `decode_path`,
 `create_tags`, `create_tag_manifests`, `payload_oxum`, and `validate`.
+It also exports `parse_profile`, `validate_profile`, `plan_upgrade`, and
+`lint_portability`.
+
+After publication, add the library to an independent MoonBit project:
+
+```powershell
+moon add zbhzs1/moonbagit@0.1.0
+```
+
+Add `"zbhzs1/moonbagit" @bag` to the consumer package's `import` block. Then call
+`@bag.parse_declaration(...)`, `@bag.create_tags(...)` or `@bag.validate(...)`.
+The registry library does not install a global CLI: clone this repository and
+build the JS target for real-filesystem commands.
 
 `BagView` separates the rules engine from its filesystem. It contains file
 records with relative paths, Int64 sizes and raw-byte digests, directory names,
@@ -88,6 +104,44 @@ moon run examples/core --target wasm-gc
 | Fetch | Parse and check local coverage/length; missing remote files remain incomplete; no download or URI execution |
 | Additional tags | Opaque content; verify if listed; unprotected tags produce warnings |
 | Host safety | Reject symlinks and special files; no source overwrite; new output only |
+| Receiving profiles | BagIt Profiles 1.4.0 rules for metadata, algorithms, fetch, files/directories and directory serialization constraints |
+| Digest upgrade | Add supported manifests to a new output; retain payload, metadata and existing payload manifests; regenerate every tag manifest |
+| Portability lint | Advisory device-name, trailing-character, case-collision and path-length diagnostics |
+
+## Receiving and Upgrading
+
+The included research-data scenario supplies receiving requirements, rather
+than generic JSON schema validation. Profile JSON is read from a caller-selected
+local file; profile identifiers and fetch URLs are never executed or fetched.
+
+```powershell
+node bin/moonbagit.mjs create examples/payload research-bag --both --metadata examples/research-metadata.json
+node bin/moonbagit.mjs validate research-bag --profile examples/research-profile.json
+node bin/moonbagit.mjs lint research-bag
+node bin/moonbagit.mjs create examples/payload sha256-bag --sha256
+node bin/moonbagit.mjs upgrade sha256-bag upgraded-bag --sha512
+node bin/moonbagit.mjs validate upgraded-bag
+```
+
+Profile results expose `conforms`, the separate base `bag` report, and profile
+diagnostics. A checksum-valid bag can fail a receiving profile. Unknown profile
+keys and older profile specifications are rejected, not ignored. Only `*` is a
+wildcard and matches zero or more characters, including `/`. Serialized input
+is currently not opened: a profile requiring serialization rejects a directory
+bag. `optional` permits this directory input; its accepted MIME types describe
+serialized input, not the directory. See [profiles](docs/PROFILES.md).
+
+Upgrade checks the original bag, copies it to sibling staging, rechecks the
+copy, adds missing manifests and regenerates all old/new tag manifests so that
+they cover every payload manifest. Existing corrupt bags are refused; upgrade
+is not a repair or authenticity service. The original bag is never modified.
+Existing valid manifests are preserved byte-for-byte; repeating an upgrade
+produces the same manifest content when tag coverage was already complete.
+Previously unprotected arbitrary tags are included in regenerated tag manifests.
+The pure `plan_upgrade` API only prepares payload manifests: the host must hash
+their exact bytes before calling `create_tag_manifests`.
+
+## Compatibility Boundaries
 
 This is a **defined subset**, not a claim of complete RFC conformance. Legacy
 BagIt versions, MD5/SHA-1, non-UTF-8 tags, automatic fetch, Unicode normalization
@@ -112,6 +166,10 @@ moon test --target js
 moon test --target wasm-gc
 python -m pip install bagit==1.9.0
 python scripts/interop.py
+git -c core.autocrlf=false clone https://github.com/LibraryOfCongress/bagit-conformance-suite.git ../bagit-conformance-suite
+git -C ../bagit-conformance-suite checkout 9ab48705c06664f9f419ca740c728c9f89a61e7c
+python scripts/conformance.py ../bagit-conformance-suite
+python scripts/benchmark.py --files 10000 --bytes 1024
 ```
 
 The independent [Library of Congress bagit-python](https://github.com/LibraryOfCongress/bagit-python)
@@ -131,13 +189,17 @@ also runs the suite. See [support details](docs/CONFORMANCE.md).
 
 ## Competition Status
 
-This is a local development snapshot. A configured CI workflow is not evidence
-of a successful remote run. Public repository creation, verified remote CI,
-Mooncakes publication, consumer installation and submission review remain to
-be completed. Competition acceptance is decided by the organizers.
+The public repository contains the implementation, CI workflow, executable
+examples and independently reproducible tests. The current delivered scope is
+the documented BagIt subset and local receiving/upgrade workflows, not a backup,
+evidence-ledger or network-transfer service. [Verification details](docs/VERIFICATION.md)
+separate observed checks from future work. Competition acceptance is decided
+by the organizers, not by test count or a configured workflow.
 
 ## License
 
 MIT. The implementation is written against RFC 8493, not copied from adjacent
 MoonBit archive/evidence projects. `bagit-python` is a test-only independent
 dependency distributed under CC0; its source is not part of this package.
+The independently maintained conformance fixtures and BagIt Profiles
+specification are also CC0. See [third-party references](THIRD_PARTY.md).

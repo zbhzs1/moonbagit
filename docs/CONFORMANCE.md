@@ -10,14 +10,14 @@ as valid; that result alone does not prove the bag violates the RFC.
 | 2.1.2 | Required data directory, nested opaque payload | Host adapters beyond Node.js |
 | 2.1.3 | One or more payload manifests, hex lengths/case, separator, every file exactly once, escaped filenames | Other algorithms and optional legacy checksum-tool quirks |
 | 2.2.1 | Forbid payload/tagmanifest entries; include every payload manifest; verify raw-byte digests; warn on different optional tag sets | Wider compatibility fixtures |
-| 2.2.2 | Metadata order/repetitions, continuation syntax; Payload-Oxum uniqueness, numeric syntax, counts | Metadata recommendation linting and transport profiles |
+| 2.2.2 | Metadata order/repetitions, continuation syntax; Payload-Oxum uniqueness, numeric syntax, counts; local receiving profiles | Wider receiving agreements |
 | 2.2.3 | Absolute scheme tokens, nonnegative or unknown length, safe payload path, per-manifest membership, local size | Full URI grammar and separately authorized remote fetching |
 | 2.2.4 | Arbitrary tag files checked if listed; content ignored | None within current host restrictions |
 | 2.3 | LF, CR, CRLF; UTF-8 text without BOM | Other encodings |
-| 2.4 | SHA-256/SHA-512; default SHA-512 creation | Legacy algorithms and digest migration |
+| 2.4 | SHA-256/SHA-512; default SHA-512 creation; non-destructive manifest upgrade | Legacy algorithms |
 | 3 | Separate completeness from hash validity; verify all checksums even if Oxum matches | Unsupported formats require another validator |
 | 5 | Path containment, reject traversal/links/special files; no remote requests | Hostile concurrent mutation, sandboxing, signatures |
-| 6 | Deterministic manifests; case-collision warnings | Unicode normalization matching and richer portability warnings |
+| 6 | Deterministic manifests; case/file/directory collisions, Windows device-name, character and length lint | Unicode normalization matching |
 
 The library's `FileRecord` contract is trusted input from its host. A caller
 that supplies fabricated digests can fabricate the result. The shipped CLI
@@ -56,3 +56,8 @@ The project's own tests also exercise missing/extra files, corrupt payload and
 tag bytes, multiple-manifest coverage, BOM and malformed UTF-8, metadata
 injection, path escapes, no-overwrite behavior and unsupported input. They are
 not a substitute for running an external full BagIt conformance suite.
+
+The pinned LibraryOfCongress/bagit-conformance-suite revision
+`9ab48705c06664f9f419ca740c728c9f89a61e7c` contains five v1.0 fixtures, all run
+without rewriting their bytes by `scripts/conformance.py`. Legacy fixture
+directories are deliberately not presented as supported BagIt versions.
