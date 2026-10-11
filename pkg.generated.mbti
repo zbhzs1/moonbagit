@@ -1,0 +1,116 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "zbhzs1/moonbagit"
+
+import {
+  "moonbitlang/core/debug",
+  "moonbitlang/core/json",
+}
+
+// Values
+pub fn algorithm(String) -> Algorithm raise FormatError
+
+pub fn check_path(String) -> Unit raise FormatError
+
+pub fn create_tag_manifests(Array[FileRecord], algorithms? : Array[Algorithm]) -> Map[String, String] raise FormatError
+
+pub fn create_tags(Array[FileRecord], metadata? : Array[Metadata], algorithms? : Array[Algorithm]) -> Map[String, String] raise FormatError
+
+pub fn decode_path(String) -> String raise FormatError
+
+pub fn encode_path(String) -> String
+
+pub fn parse_declaration(String) -> Declaration raise FormatError
+
+pub fn parse_fetch(String) -> Array[FetchEntry] raise FormatError
+
+pub fn parse_manifest(String, String) -> Manifest raise FormatError
+
+pub fn parse_metadata(String) -> Array[Metadata] raise FormatError
+
+pub fn payload_oxum(Array[FileRecord]) -> String raise FormatError
+
+pub fn render_manifest(Array[Entry]) -> String raise FormatError
+
+pub fn render_metadata(Array[Metadata]) -> String raise FormatError
+
+pub fn validate(BagView) -> Report
+
+// Errors
+pub(all) suberror FormatError {
+  Invalid(String)
+} derive(Eq, @debug.Debug)
+
+// Types and methods
+pub(all) enum Algorithm {
+  Sha256
+  Sha512
+} derive(Eq, @debug.Debug)
+pub fn Algorithm::hex_length(Self) -> Int
+pub fn Algorithm::name(Self) -> String
+
+pub(all) struct BagView {
+  files : Array[FileRecord]
+  directories : Array[String]
+  texts : Map[String, String]
+} derive(@debug.Debug, @json.FromJson)
+
+pub(all) struct Declaration {
+  version : String
+  encoding : String
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Diagnostic {
+  severity : Severity
+  code : String
+  path : String
+  message : String
+} derive(ToJson, @debug.Debug)
+
+pub(all) struct Entry {
+  path : String
+  checksum : String
+} derive(Eq, @debug.Debug)
+
+pub(all) struct FetchEntry {
+  url : String
+  size : Int64?
+  path : String
+} derive(Eq, @debug.Debug)
+
+pub(all) struct FileRecord {
+  path : String
+  size : Int64
+  digests : Map[String, String]
+} derive(ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct Manifest {
+  name : String
+  algorithm : Algorithm
+  tag : Bool
+  entries : Array[Entry]
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Metadata {
+  label : String
+  value : String
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
+
+pub(all) struct Report {
+  complete : Bool
+  valid : Bool
+  payload_files : Int
+  payload_bytes : Int64
+  verified_checksums : Int
+  diagnostics : Array[Diagnostic]
+} derive(ToJson, @debug.Debug)
+pub fn Report::has_code(Self, String) -> Bool
+
+pub(all) enum Severity {
+  Error
+  Warning
+} derive(Eq, ToJson, @debug.Debug)
+
+// Type aliases
+
+// Traits
+

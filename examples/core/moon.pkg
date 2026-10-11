@@ -1,0 +1,5 @@
+import {
+  "zbhzs1/moonbagit" @bag,
+}
+
+pkgtype(kind: "executable")

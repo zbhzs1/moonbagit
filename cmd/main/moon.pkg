@@ -1,0 +1,8 @@
+import {
+  "zbhzs1/moonbagit" @bag,
+  "moonbitlang/core/json",
+}
+
+pkgtype(kind: "executable")
+
+supported_targets = "+js"
