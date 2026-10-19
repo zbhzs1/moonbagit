@@ -3,7 +3,7 @@ extern "js" fn call_host(op : String, args : String) -> String =
   #| (op, args) => globalThis.__moonbagit.call(op, args)
 
 ///|
-extern "js" fn exit_code(code : Int) -> Unit =
+extern "js" fn exit_code(code : Int32) -> Unit =
   #| code => { process.exitCode = code; }
 
 ///|
@@ -76,11 +76,11 @@ fn create(args : Array[String]) -> Json raise {
   let inventory = scan(stage)
   let payload = inventory.files.filter(f => f.path.has_prefix("data/"))
   let initial = @bag.create_tags(payload, metadata~, algorithms~)
-  ignore(host("write_tags", { "root": stage, "tags": initial.to_json() }))
+  ignore(host("write_tags", { "root": stage, "tags": Json(initial) }))
   let inventory = scan(stage)
   let tags = inventory.files.filter(f => !f.path.has_prefix("data/"))
   let manifests = @bag.create_tag_manifests(tags, algorithms~)
-  ignore(host("write_tags", { "root": stage, "tags": manifests.to_json() }))
+  ignore(host("write_tags", { "root": stage, "tags": Json(manifests) }))
   let view = scan(stage)
   let report = @bag.validate(view)
   guard report.valid else {
@@ -134,10 +134,7 @@ fn upgrade(args : Array[String]) -> Json raise {
   // Recheck the copied source before any manifests change.
   let plan = @bag.plan_upgrade(scan(stage), algorithms)
   ignore(
-    host("write_tags", {
-      "root": stage,
-      "tags": plan.payload_manifests.to_json(),
-    }),
+    host("write_tags", { "root": stage, "tags": Json(plan.payload_manifests) }),
   )
   let records = scan(stage).files.filter(f => {
     !f.path.has_prefix("data/") &&
@@ -145,11 +142,7 @@ fn upgrade(args : Array[String]) -> Json raise {
   })
   let tags = @bag.create_tag_manifests(records, algorithms=plan.tag_algorithms)
   ignore(
-    host("write_tags", {
-      "root": stage,
-      "tags": tags.to_json(),
-      "replace": true,
-    }),
+    host("write_tags", { "root": stage, "tags": Json(tags), "replace": true }),
   )
   let report = @bag.validate(scan(stage))
   guard report.valid else {
@@ -174,7 +167,7 @@ fn run(args : Array[String]) -> Json raise {
         raise @bag.Invalid("lint requires one bag directory")
       }
       let diagnostics = @bag.lint_portability(scan(args[1]))
-      { "command": "lint", "diagnostics": diagnostics.to_json() }
+      { "command": "lint", "diagnostics": Json(diagnostics) }
     }
     "validate" => {
       guard args.length() == 2 || (args.length() == 4 && args[2] == "--profile") else {

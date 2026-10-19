@@ -4,7 +4,7 @@ fn issue(
   code : String,
   path : String,
   message : String,
-  warning? : Bool = false,
+  warning~ : Bool = false,
 ) -> Unit {
   out.push({
     severity: if warning {

@@ -12,8 +12,8 @@ JSON evidence pack, backup database, ZIP file, or network transfer service.
 ## Quick Start
 
 Install the [MoonBit toolchain](https://www.moonbitlang.com/download/) and Node.js
-22 or later. Use MoonBit `moon 0.1.20260920` or later. This release was tested with
-`moonc v0.10.14` and
+22 or later. Use MoonBit `moon 0.1.20261012` or later. This release was tested with
+`moonc v0.10.15` and
 Node.js 24.14.1.
 
 ```powershell
@@ -70,7 +70,7 @@ It also exports `parse_profile`, `validate_profile`, `plan_upgrade`, and
 Add the published library to an independent MoonBit project:
 
 ```powershell
-moon add zbhzs1/moonbagit@0.1.0
+moon add zbhzs1/moonbagit@0.2.0
 ```
 
 Add `"zbhzs1/moonbagit" @bag` to the consumer package's `import` block. Then call
@@ -117,6 +117,9 @@ moon run examples/core --target wasm-gc
 | Portability lint | Advisory device-name, trailing-character, case-collision and path-length diagnostics |
 
 ## Receiving and Upgrading
+
+See [three reproducible workflows](docs/SCENARIOS.md) for research handoff,
+digital-library receiving checks and archive checksum migration.
 
 The included research-data scenario supplies receiving requirements, rather
 than generic JSON schema validation. Profile JSON is read from a caller-selected

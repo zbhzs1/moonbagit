@@ -18,7 +18,7 @@ pub fn Algorithm::name(self : Algorithm) -> String {
 }
 
 ///|
-pub fn Algorithm::hex_length(self : Algorithm) -> Int {
+pub fn Algorithm::hex_length(self : Algorithm) -> Int32 {
   match self {
     Sha256 => 64
     Sha512 => 128
@@ -100,9 +100,9 @@ pub(all) struct Diagnostic {
 pub(all) struct Report {
   complete : Bool
   valid : Bool
-  payload_files : Int
+  payload_files : Int32
   payload_bytes : Int64
-  verified_checksums : Int
+  verified_checksums : Int32
   diagnostics : Array[Diagnostic]
 } derive(@debug.Debug, ToJson)
 

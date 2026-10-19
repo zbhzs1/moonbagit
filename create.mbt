@@ -61,8 +61,8 @@ pub fn payload_oxum(files : Array[FileRecord]) -> String raise FormatError {
 /// Returns initial tag text; callers then hash these bytes to build tag manifests.
 pub fn create_tags(
   payload : Array[FileRecord],
-  metadata? : Array[Metadata] = [],
-  algorithms? : Array[Algorithm] = [Sha512],
+  metadata~ : Array[Metadata] = [],
+  algorithms~ : Array[Algorithm] = [Sha512],
 ) -> Map[String, String] raise FormatError {
   checked_algorithms(algorithms)
   for file in payload {
@@ -89,7 +89,7 @@ pub fn create_tags(
 ///|
 pub fn create_tag_manifests(
   tags : Array[FileRecord],
-  algorithms? : Array[Algorithm] = [Sha512],
+  algorithms~ : Array[Algorithm] = [Sha512],
 ) -> Map[String, String] raise FormatError {
   checked_algorithms(algorithms)
   for file in tags {

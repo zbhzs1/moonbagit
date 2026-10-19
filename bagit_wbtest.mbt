@@ -1,5 +1,5 @@
 ///|
-fn repeated(c : String, length : Int) -> String {
+fn repeated(c : String, length : Int32) -> String {
   let out = StringBuilder()
   for _ in 0..<length {
     out.write_string(c)

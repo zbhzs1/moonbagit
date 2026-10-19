@@ -5,7 +5,7 @@ does not promise full RFC conformance, production performance or committee appro
 
 ## Local checks
 
-- MoonBit 0.1.20260920 / moonc 0.10.14: strict JS check, JS build and format check.
+- MoonBit 0.1.20261012 / moonc 0.10.15: strict JS check, JS build and format check.
 - 84 distinct MoonBit unit tests on JS and WASM-GC (not 168 distinct tests).
 - 35 CLI/independent-tool scenarios against both published bagit-python 1.9.0
   source and pinned upstream source. Windows skips newline filenames and

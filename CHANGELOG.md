@@ -12,6 +12,7 @@
   bag satisfies the receiving profile; retain rejected staging and report it.
 - Reject duplicate metadata/profile CLI options and validate configuration
   before copying files.
+- Adapt format and JSON conversion calls to the October 12 MoonBit toolchain.
 - Expand core regression tests from 65 to 84 and CLI/interoperability scenarios
   from 28 to 35. JS and WASM-GC run the same core suite, not distinct tests.
 

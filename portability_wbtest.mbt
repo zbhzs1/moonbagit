@@ -1,7 +1,7 @@
 ///|
 fn portability_view(
   paths : Array[String],
-  directories? : Array[String] = [],
+  directories~ : Array[String] = [],
 ) -> BagView {
   {
     files: paths.map(path => { path, size: 0L, digests: Map([]), }),

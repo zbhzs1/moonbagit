@@ -248,7 +248,7 @@ pub fn render_metadata(fields : Array[Metadata]) -> String raise FormatError {
 }
 
 ///|
-fn take_token(row : String, start : Int) -> (String, Int) {
+fn take_token(row : String, start : Int32) -> (String, Int32) {
   let mut i = start
   while i < row.length() && !linear_unit(row[i]) {
     i = i + 1

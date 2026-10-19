@@ -26,7 +26,7 @@ fn profile_field(key : String, value : Json) -> Json {
     _ => abort("fixture")
   }
   fields[key] = value
-  fields.to_json()
+  Json(fields)
 }
 
 ///|
@@ -69,8 +69,8 @@ test "profile parsing fails closed on unknown fields and versions" {
   let fields = profile_object(profile_fixture_json())
   let info = profile_object(fields.get("BagIt-Profile-Info").unwrap())
   info["BagIt-Profile-Version"] = "1.1.0"
-  fields["BagIt-Profile-Info"] = info.to_json()
-  rejects(() => ignore(parse_profile(fields.to_json())))
+  fields["BagIt-Profile-Info"] = Json(info)
+  rejects(() => ignore(parse_profile(Json(fields))))
 }
 
 ///|
@@ -149,7 +149,7 @@ test "profile algorithm requirements and exclusions are independent" {
   let fields = profile_object(profile_fixture_json())
   fields["Manifests-Required"] = ["sha512"]
   fields["Manifests-Allowed"] = ["sha256"]
-  rejects(() => ignore(parse_profile(fields.to_json())))
+  rejects(() => ignore(parse_profile(Json(fields))))
 }
 
 ///|
@@ -171,7 +171,7 @@ test "profile fetch rules and inconsistent profile rejection" {
   let fields = profile_object(profile_fixture_json())
   fields["Allow-Fetch.txt"] = false
   fields["Fetch.txt-Required"] = true
-  rejects(() => ignore(parse_profile(fields.to_json())))
+  rejects(() => ignore(parse_profile(Json(fields))))
 }
 
 ///|
@@ -182,10 +182,7 @@ test "serialization required rejects directory rather than silently ignoring it"
   let fields = profile_object(profile_fixture_json())
   fields["Serialization"] = "required"
   fields["Accept-Serialization"] = ["application/zip"]
-  let report = validate_profile(
-    profiled_fixture(),
-    parse_profile(fields.to_json()),
-  )
+  let report = validate_profile(profiled_fixture(), parse_profile(Json(fields)))
   assert_true(has_profile_code(report, "profile_serialization"))
   assert_false(report.conforms)
 }
@@ -227,10 +224,7 @@ test "profile tag and payload required missing paths" {
   let fields = profile_object(profile_fixture_json())
   fields["Tag-Files-Required"] = ["receipt.txt"]
   fields["Payload-Files-Required"] = ["data/absent.txt"]
-  let report = validate_profile(
-    profiled_fixture(),
-    parse_profile(fields.to_json()),
-  )
+  let report = validate_profile(profiled_fixture(), parse_profile(Json(fields)))
   assert_true(has_profile_code(report, "profile_tag_required"))
   assert_true(has_profile_code(report, "profile_payload_required"))
 }
@@ -278,7 +272,7 @@ test "profile safe path restrictions and contradictory paths" {
   let fields = profile_object(profile_fixture_json())
   fields["Tag-Files-Required"] = ["required.txt"]
   fields["Tag-Files-Allowed"] = ["bagit.txt"]
-  rejects(() => ignore(parse_profile(fields.to_json())))
+  rejects(() => ignore(parse_profile(Json(fields))))
 }
 
 ///|
