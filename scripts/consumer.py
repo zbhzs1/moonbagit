@@ -8,7 +8,7 @@ FILES = {
 version = "0.1.0"
 preferred_target = "wasm-gc"
 import {
-  "zbhzs1/moonbagit@0.1.0",
+  "zbhzs1/moonbagit@0.2.0",
 }
 ''',
     "moon.pkg": '''import {
@@ -43,7 +43,14 @@ pkgtype(kind: "executable")
     let plan = @bag.plan_upgrade(view, [@bag.Sha256])
     guard plan.payload_manifests.contains("manifest-sha256.txt") else { abort("consumer upgrade failed") }
     assert_true(@bag.lint_portability(view).is_empty())
-    println("Mooncakes consumer 0.1.0: declaration, creation, receiving profile, upgrade and portability passed")
+    let fetch = @bag.render_fetch([
+      @bag.FetchEntry::{ url: "https://example.org/data%20file", size: Some(3L), path: "data/a%.txt", },
+    ])
+    let entries = @bag.parse_fetch(fetch)
+    guard entries.length() == 1 && entries[0].path == "data/a%.txt" else { abort("consumer fetch round trip failed") }
+    let invalid_view : @bag.BagView = { files: records, directories: ["data", "bagit.txt"], texts: tags, }
+    assert_true(@bag.validate(invalid_view).has_code("file_directory_collision"))
+    println("Mooncakes consumer 0.2.0: declaration, creation, receiving profile, upgrade, portability, fetch and inventory checks passed")
   } catch {
     error => abort(error.to_string())
   }
@@ -61,7 +68,7 @@ with tempfile.TemporaryDirectory(prefix="moonbagit-consumer-") as temporary:
                                 capture_output=True, check=True, timeout=180)
         print(result.stdout, end="")
         if args[0] == "run":
-            assert "Mooncakes consumer 0.1.0" in result.stdout, result.stdout
+            assert "Mooncakes consumer 0.2.0" in result.stdout, result.stdout
     package = root / ".mooncakes" / "zbhzs1" / "moonbagit"
     assert package.is_dir() and not package.is_symlink(), "registry package was not installed"
     print("PASS: fresh published-package consumer on JS and WASM-GC")

@@ -42,9 +42,24 @@ without doing I/O and is not substituted for this measurement.
 
 ## Remote and release evidence
 
-Version 0.2.0 local checks above are complete. Its remote CI, registry publication
-and fresh-consumer results will be recorded only after they actually complete.
-The evidence below is the previous 0.1.0 release, not proof of the new release.
+Version 0.2.0 source revision `83c3ff11384a3a4e92b5563241de46362763351d`
+passed both Linux and Windows in
+[run 39196129587](https://github.com/zbhzs1/moonbagit/actions/runs/39196129587).
+Linux ran all 35 CLI/interoperability scenarios without skips; Windows skipped
+the two OS-restricted cases. Both ran 84 core tests on each JS/WASM-GC target,
+strict checking, formatting, building and five pinned external fixtures.
+
+Mooncakes `zbhzs1/moonbagit@0.2.0` was published with server `200 OK` at
+2026-10-19T03:46:53Z. The registry SHA-256 is
+`1e5ffec23027437762f67fdf3d729e3dd3523115f253042c7c4f2b55342b4600`, matching
+the local submitted ZIP; the record is not yanked and declares MIT.
+A fresh temporary consumer installed the real registry package and passed on
+JS and WASM-GC, including the new fetch round-trip and invalid-inventory checks.
+The shipped `scripts/consumer.py` now reproduces this version-specific check
+in CI. Its update and these release-evidence notes postdate the published ZIP;
+they do not change the released library or CLI implementation.
+
+### Previous release
 
 Public repository: https://github.com/zbhzs1/moonbagit
 
@@ -65,7 +80,7 @@ A separate consumer project installed this exact version from the registry,
 with no local path override, and ran declaration parsing, empty-bag creation,
 profile checks, upgrade planning and portability lint on JS and WASM-GC.
 `python scripts/consumer.py` reproduces this fresh-directory installation and
-is included in subsequent CI runs. No local credentials are necessary to
+was included in subsequent CI runs (it now targets 0.2.0). No local credentials are necessary to
 install this public package. Registry release contents correspond to the
 release source revision above; documentation added after publication does not
 change the already published ZIP.

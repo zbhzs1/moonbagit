@@ -18,6 +18,8 @@
 
 This release intentionally rejects previously accepted inconsistent inventories
 and metadata/URI inputs. See README for conservative policy boundaries.
+The published ZIP corresponds to source revision `83c3ff1`. Subsequent
+published-consumer and verification-note updates do not change its implementation.
 
 ## 0.1.0 - 2026-10-11
 
