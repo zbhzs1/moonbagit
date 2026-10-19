@@ -42,3 +42,10 @@ change the base report into a checksum failure. A matching profile or
 Payload-Oxum cannot make corrupt content valid. Serialized inputs should be
 verified and safely unpacked by a separately reviewed adapter before using the
 directory API; no archive extraction is hidden in this module.
+
+The filesystem CLI also accepts `create SOURCE OUTPUT --profile FILE.json`.
+The profile is parsed before any copying. The complete staged bag must satisfy
+the receiving profile before it is renamed to `OUTPUT`; a mismatch retains
+staging for inspection, reports its location, exits 1 and does not publish the
+requested output. Required metadata is caller supplied, not synthesized from
+the profile. Use `examples/research-metadata.json` with the research profile.

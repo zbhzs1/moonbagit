@@ -30,6 +30,8 @@ fn create(args : Array[String]) -> Json raise {
   let output = args[2]
   let mut algorithms = [@bag.Sha512]
   let mut metadata : Array[@bag.Metadata] = []
+  let mut metadata_selected = false
+  let mut profile : @bag.Profile? = None
   let mut selected = false
   let mut i = 3
   while i < args.length() {
@@ -46,16 +48,28 @@ fn create(args : Array[String]) -> Json raise {
         }
       }
       "--metadata" => {
-        guard i + 1 < args.length() else {
+        guard !metadata_selected && i + 1 < args.length() else {
           raise @bag.Invalid("metadata requires a JSON file")
         }
+        metadata_selected = true
         i = i + 1
         metadata = @json.from_json(host("metadata", { "path": args[i] }))
+      }
+      "--profile" => {
+        guard profile is None && i + 1 < args.length() else {
+          raise @bag.Invalid("profile requires exactly one JSON file")
+        }
+        i = i + 1
+        profile = Some(
+          @bag.parse_profile(host("metadata", { "path": args[i] })),
+        )
       }
       _ => raise @bag.Invalid("unknown option: " + args[i])
     }
     i = i + 1
   }
+  // Reject invalid metadata before copying any payload into staging.
+  ignore(@bag.create_tags([], metadata~, algorithms~))
   let stage : String = @json.from_json(
     host("prepare", { "source": source, "output": output }),
   )
@@ -67,11 +81,34 @@ fn create(args : Array[String]) -> Json raise {
   let tags = inventory.files.filter(f => !f.path.has_prefix("data/"))
   let manifests = @bag.create_tag_manifests(tags, algorithms~)
   ignore(host("write_tags", { "root": stage, "tags": manifests.to_json() }))
-  let report = @bag.validate(scan(stage))
+  let view = scan(stage)
+  let report = @bag.validate(view)
   guard report.valid else {
     raise @bag.Invalid(
       "new bag failed verification; staging directory retained: " + stage,
     )
+  }
+  if profile is Some(profile) {
+    let receiving = @bag.validate_profile(view, profile)
+    if !receiving.conforms {
+      exit_code(1)
+      return {
+        "command": "create",
+        "output": output,
+        "published": false,
+        "staging": stage,
+        "profile": receiving.to_json(),
+        "report": report.to_json(),
+      }
+    }
+    ignore(host("commit", { "root": stage, "output": output }))
+    return {
+      "command": "create",
+      "output": output,
+      "published": true,
+      "profile": receiving.to_json(),
+      "report": report.to_json(),
+    }
   }
   ignore(host("commit", { "root": stage, "output": output }))
   { "command": "create", "output": output, "report": report.to_json() }
@@ -170,7 +207,7 @@ fn main {
     if args.is_empty() || args[0] == "--help" {
       println("MoonBagIt - BagIt 1.0 UTF-8 / SHA-256 / SHA-512")
       println(
-        "node bin/moonbagit.mjs create SOURCE OUTPUT [--sha256|--sha512|--both] [--metadata FILE.json]",
+        "node bin/moonbagit.mjs create SOURCE OUTPUT [--sha256|--sha512|--both] [--metadata FILE.json] [--profile FILE.json]",
       )
       println("node bin/moonbagit.mjs validate BAG [--profile FILE.json]")
       println("node bin/moonbagit.mjs lint BAG")

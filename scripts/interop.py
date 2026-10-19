@@ -262,6 +262,80 @@ class Interop(unittest.TestCase):
         self.assertEqual(report["diagnostics"], [])
         self.assertTrue(bagit.Bag(str(output)).validate())
 
+    def test_create_enforces_receiving_profile_before_publication(self):
+        output = self.base / "accepted"
+        result = run("create", ROOT / "examples" / "payload", output, "--both",
+                     "--metadata", ROOT / "examples" / "research-metadata.json",
+                     "--profile", ROOT / "examples" / "research-profile.json")
+        self.assertTrue(result["published"])
+        self.assertTrue(result["profile"]["conforms"])
+        self.assertTrue(bagit.Bag(str(output)).validate())
+
+    def test_create_profile_mismatch_retains_staging_not_output(self):
+        source = self.base / "source"
+        payload(source)
+        before = {p.relative_to(source): p.read_bytes() for p in source.rglob("*") if p.is_file()}
+        output = self.base / "rejected"
+        result = run("create", source, output, "--profile",
+                     ROOT / "examples" / "research-profile.json", code=1)
+        self.assertFalse(result["published"])
+        self.assertTrue(result["report"]["valid"])
+        self.assertFalse(result["profile"]["conforms"])
+        self.assertTrue(any(d["code"] == "profile_identifier" for d in result["profile"]["diagnostics"]))
+        self.assertFalse(output.exists())
+        staging = Path(result["staging"])
+        self.assertEqual(staging.parent, output.parent)
+        self.assertTrue(run("validate", staging)["valid"])
+        self.assertEqual(before, {p.relative_to(source): p.read_bytes() for p in source.rglob("*") if p.is_file()})
+
+    def test_create_profile_rejects_missing_required_algorithm(self):
+        output = self.base / "rejected"
+        result = run("create", ROOT / "examples" / "payload", output, "--sha256",
+                     "--metadata", ROOT / "examples" / "research-metadata.json",
+                     "--profile", ROOT / "examples" / "research-profile.json", code=1)
+        self.assertFalse(result["published"])
+        self.assertFalse(output.exists())
+        self.assertTrue(result["report"]["valid"])
+        self.assertTrue(result["profile"]["diagnostics"])
+
+    def test_create_bad_profile_fails_before_staging(self):
+        profile = json.loads((ROOT / "examples" / "research-profile.json").read_text(encoding="utf-8"))
+        profile["Unknown-Constraint"] = True
+        path = self.base / "bad-profile.json"
+        path.write_text(json.dumps(profile), encoding="utf-8")
+        output = self.base / "never-created"
+        before = set(self.base.iterdir())
+        self.assertIn("unknown profile", run("create", ROOT / "examples" / "payload", output,
+                      "--profile", path, code=2)["error"])
+        self.assertEqual(set(self.base.iterdir()), before)
+
+    def test_create_rejects_duplicate_or_missing_profile_option(self):
+        path = ROOT / "examples" / "research-profile.json"
+        for options in [("--profile",), ("--profile", path, "--profile", path)]:
+            output = self.base / "never-created"
+            before = set(self.base.iterdir())
+            self.assertIn("error", run("create", ROOT / "examples" / "payload", output, *options, code=2))
+            self.assertEqual(set(self.base.iterdir()), before)
+
+    def test_create_unsafe_metadata_fails_before_staging(self):
+        path = self.base / "bad-metadata.json"
+        output = self.base / "never-created"
+        for field in [{"label": "Name", "value": "\x1b[31m"},
+                      {"label": "Description", "value": "first\n hidden"},
+                      {"label": "Payload-Oxum", "value": "0.0"}]:
+            path.write_text(json.dumps([field]), encoding="utf-8")
+            before = set(self.base.iterdir())
+            self.assertIn("error", run("create", ROOT / "examples" / "payload", output,
+                          "--metadata", path, code=2))
+            self.assertEqual(set(self.base.iterdir()), before)
+
+    def test_create_duplicate_metadata_option_fails_before_staging(self):
+        path = ROOT / "examples" / "research-metadata.json"
+        before = set(self.base.iterdir())
+        self.assertIn("error", run("create", ROOT / "examples" / "payload", self.base / "never-created",
+                      "--metadata", path, "--metadata", path, code=2))
+        self.assertEqual(set(self.base.iterdir()), before)
+
     def test_profile_rejects_wrong_identifier_on_otherwise_valid_bag(self):
         _, output = self.moon_bag()
         result = run("validate", output, "--profile", ROOT / "examples" / "research-profile.json", code=1)

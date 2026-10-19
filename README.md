@@ -123,7 +123,7 @@ than generic JSON schema validation. Profile JSON is read from a caller-selected
 local file; profile identifiers and fetch URLs are never executed or fetched.
 
 ```powershell
-node bin/moonbagit.mjs create examples/payload research-bag --both --metadata examples/research-metadata.json
+node bin/moonbagit.mjs create examples/payload research-bag --both --metadata examples/research-metadata.json --profile examples/research-profile.json
 node bin/moonbagit.mjs validate research-bag --profile examples/research-profile.json
 node bin/moonbagit.mjs lint research-bag
 node bin/moonbagit.mjs create examples/payload sha256-bag --sha256
@@ -132,7 +132,12 @@ node bin/moonbagit.mjs validate upgraded-bag
 ```
 
 Profile results expose `conforms`, the separate base `bag` report, and profile
-diagnostics. A checksum-valid bag can fail a receiving profile. Unknown profile
+diagnostics. Creation with `--profile` validates the staged bag before publishing
+the output. A mismatch exits with code 1, returns `published: false` and a
+`staging` path for inspection, and leaves the requested output absent. Profile
+identifiers and required metadata must be explicitly supplied; creation never
+invents them. Invalid profile configuration and unsafe metadata fail before
+staging is created. A checksum-valid bag can fail a receiving profile. Unknown profile
 keys and older profile specifications are rejected, not ignored. Only `*` is a
 wildcard and matches zero or more characters, including `/`. Serialized input
 is currently not opened: a profile requiring serialization rejects a directory
