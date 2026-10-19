@@ -28,6 +28,7 @@ fn manifest_name(path : String, tag : Bool) -> Bool {
 ///|
 pub fn validate(view : BagView) -> Report {
   let diagnostics : Array[Diagnostic] = []
+  check_inventory(view, diagnostics)
   let files : Map[String, FileRecord] = Map([])
   let payload : Array[FileRecord] = []
   let payload_names : Array[String] = []

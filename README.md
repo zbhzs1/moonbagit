@@ -76,6 +76,9 @@ build the JS target for real-filesystem commands.
 `BagView` separates the rules engine from its filesystem. It contains file
 records with relative paths, Int64 sizes and raw-byte digests, directory names,
 and strictly decoded text tags. Callers must supply accurate records and hashes.
+The directory list must include every parent directory, including empty
+directories. Duplicate/unsafe directory names, file/directory collisions and
+standard tag filenames used as directories are rejected rather than trusted.
 `validate` does not read files or compute hashes itself. The CLI supplies these
 through a small Node.js adapter using streaming `node:crypto` hashes; there is
 no custom cryptographic implementation. The pure core also runs on WASM-GC.
