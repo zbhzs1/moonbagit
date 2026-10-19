@@ -62,7 +62,7 @@ or protect against an attacker who can rewrite files and manifests together.
 ## Library
 
 The root MoonBit package exports typed models, `parse_declaration`,
-`parse_manifest`, `parse_metadata`, `parse_fetch`, `encode_path`, `decode_path`,
+`parse_manifest`, `parse_metadata`, `parse_fetch`, `render_fetch`, `encode_path`, `decode_path`,
 `create_tags`, `create_tag_manifests`, `payload_oxum`, and `validate`.
 It also exports `parse_profile`, `validate_profile`, `plan_upgrade`, and
 `lint_portability`.
@@ -109,7 +109,7 @@ moon run examples/core --target wasm-gc
 | Metadata | Ordered/repeated fields, continuations; unique and numeric Payload-Oxum |
 | Paths | `/` separators, normative `%25`, `%0D`, `%0A`; no traversal, absolute, NUL, drive or backslash paths |
 | Checksums | Verify every supported manifest, including all tag manifests |
-| Fetch | Parse and check local coverage/length; missing remote files remain incomplete; no download or URI execution |
+| Fetch | Parse/write offline plans and check local coverage/length; missing remote files remain incomplete; no download or URI execution |
 | Additional tags | Opaque content; verify if listed; unprotected tags produce warnings |
 | Host safety | Reject symlinks and special files; no source overwrite; new output only |
 | Receiving profiles | BagIt Profiles 1.4.0 rules for metadata, algorithms, fetch, files/directories and directory serialization constraints |
@@ -154,8 +154,10 @@ their exact bytes before calling `create_tag_manifests`.
 This is a **defined subset**, not a claim of complete RFC conformance. Legacy
 BagIt versions, MD5/SHA-1, non-UTF-8 tags, automatic fetch, Unicode normalization
 matching, and general RFC 3986 URI validation are future compatibility work.
-The fetch parser currently verifies an absolute URI scheme and token structure,
-not every URI grammar rule. Case-only collisions produce warnings. Portable
+The fetch parser/writer verify an absolute URI scheme, ASCII URI characters,
+percent escapes and token structure, not scheme-specific authority or every URI
+grammar rule. URI strings must already use percent encoding where necessary;
+payload paths use the separate BagIt path encoding. Case-only collisions produce warnings. Portable
 path restrictions intentionally reject some otherwise legal Unix filenames.
 
 The CLI supports 100,000 files and 100,000 directories, 16 MiB per standard text

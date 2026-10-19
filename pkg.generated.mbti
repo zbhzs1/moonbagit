@@ -37,6 +37,8 @@ pub fn plan_upgrade(BagView, Array[Algorithm]) -> UpgradePlan raise FormatError
 
 pub fn profile_path_matches(String, String) -> Bool
 
+pub fn render_fetch(Array[FetchEntry]) -> String raise FormatError
+
 pub fn render_manifest(Array[Entry]) -> String raise FormatError
 
 pub fn render_metadata(Array[Metadata]) -> String raise FormatError

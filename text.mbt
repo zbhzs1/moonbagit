@@ -261,30 +261,54 @@ fn take_token(row : String, start : Int) -> (String, Int) {
 }
 
 ///|
+fn check_fetch_url(url : String) -> Unit raise FormatError {
+  guard url.find(":") is Some(colon) && colon > 0 else {
+    raise Invalid("fetch URL must be an absolute URI")
+  }
+  let scheme = url[:colon].to_owned()
+  let first = scheme[0]
+  guard ((first >= 'a' && first <= 'z') || (first >= 'A' && first <= 'Z')) &&
+    scheme
+    .iter()
+    .all(c => {
+      (c >= 'a' && c <= 'z') ||
+      (c >= 'A' && c <= 'Z') ||
+      (c >= '0' && c <= '9') ||
+      c == '+' ||
+      c == '-' ||
+      c == '.'
+    }) else {
+    raise Invalid("invalid URI scheme")
+  }
+  let mut i = colon + 1
+  while i < url.length() {
+    let c = url[i]
+    if c == '%' {
+      guard i + 2 < url.length() &&
+        url[i + 1:i + 3].to_owned().iter().all(c => c.is_ascii_hexdigit()) else {
+        raise Invalid("invalid percent escape in fetch URI")
+      }
+      i = i + 3
+    } else {
+      guard (c >= 'a' && c <= 'z') ||
+        (c >= 'A' && c <= 'Z') ||
+        (c >= '0' && c <= '9') ||
+        "-._~:/?#[]@!$&'()*+,;=".contains(url[i:i + 1].to_owned()) else {
+        raise Invalid("fetch URI contains a non-URI character")
+      }
+      i = i + 1
+    }
+  }
+}
+
+///|
 pub fn parse_fetch(text : String) -> Array[FetchEntry] raise FormatError {
   let result : Array[FetchEntry] = []
   let seen : Map[String, Bool] = Map([])
   for row in lines(text) {
     let (url, next) = take_token(row, 0)
     let (length, end) = take_token(row, next)
-    guard url.find(":") is Some(colon) && colon > 0 else {
-      raise Invalid("fetch URL must be an absolute URI")
-    }
-    let scheme = url[:colon].to_owned()
-    let first = scheme[0]
-    guard ((first >= 'a' && first <= 'z') || (first >= 'A' && first <= 'Z')) &&
-      scheme
-      .iter()
-      .all(c => {
-        (c >= 'a' && c <= 'z') ||
-        (c >= 'A' && c <= 'Z') ||
-        (c >= '0' && c <= '9') ||
-        c == '+' ||
-        c == '-' ||
-        c == '.'
-      }) else {
-      raise Invalid("invalid URI scheme")
-    }
+    check_fetch_url(url)
     let size = if length == "-" {
       None
     } else {
@@ -306,4 +330,33 @@ pub fn parse_fetch(text : String) -> Array[FetchEntry] raise FormatError {
     result.push({ url, size, path, })
   }
   result
+}
+
+///|
+/// Serialize an offline fetch plan; this function never downloads its URIs.
+pub fn render_fetch(entries : Array[FetchEntry]) -> String raise FormatError {
+  let out = StringBuilder()
+  let seen : Map[String, Bool] = Map([])
+  for entry in entries {
+    check_fetch_url(entry.url)
+    check_path(entry.path)
+    guard entry.path.has_prefix("data/") else {
+      raise Invalid("fetch entry must be a payload file")
+    }
+    guard !seen.contains(entry.path) else {
+      raise Invalid("duplicate fetch path")
+    }
+    seen[entry.path] = true
+    let size = match entry.size {
+      None => "-"
+      Some(size) => {
+        guard size >= 0L else { raise Invalid("negative fetch size") }
+        size.to_string()
+      }
+    }
+    out.write_string(
+      entry.url + " " + size + " " + encode_path(entry.path) + "\n",
+    )
+  }
+  out.to_string()
 }
