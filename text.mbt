@@ -160,12 +160,22 @@ pub fn parse_manifest(
 pub fn render_manifest(entries : Array[Entry]) -> String raise FormatError {
   let out = StringBuilder()
   let seen : Map[String, Bool] = Map([])
+  let mut digest_length = 0
   for entry in entries {
     check_path(entry.path)
+    guard !linear_unit(entry.path[0]) else {
+      raise Invalid(
+        "leading path whitespace is ambiguous with manifest separators",
+      )
+    }
     guard (entry.checksum.length() == 64 || entry.checksum.length() == 128) &&
       entry.checksum.iter().all(c => c.is_ascii_hexdigit()) else {
       raise Invalid("manifest writer requires a SHA-256 or SHA-512 hex digest")
     }
+    guard digest_length == 0 || digest_length == entry.checksum.length() else {
+      raise Invalid("one manifest cannot mix checksum algorithms")
+    }
+    digest_length = entry.checksum.length()
     guard !seen.contains(entry.path) else {
       raise Invalid("duplicate manifest path")
     }

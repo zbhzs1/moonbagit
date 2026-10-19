@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.1 - 2026-10-19
+
+- Reject manifest writer inputs that mix digest lengths or have ambiguous
+  leading path whitespace rather than generating text that changes a filename.
+- Refuse creation/upgrade over an existing dangling output symlink, including
+  the final publication check; do not treat a failed symlink target as absence.
+- Reject orphan decoded-text entries so nonexistent metadata cannot satisfy a
+  receiving profile through an inconsistent host inventory.
+- Add six core regressions (90 total) and two CLI regressions (37 total).
+- Document architecture, actual adjacent-project differences and reproducible
+  review evidence without claiming organizer approval or complete RFC support.
+
 ## 0.2.0 - 2026-10-19
 
 - Validate directory inventories: ancestor coverage, duplicate directories,

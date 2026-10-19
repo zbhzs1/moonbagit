@@ -5,6 +5,13 @@ fn check_inventory(view : BagView, diagnostics : Array[Diagnostic]) -> Unit {
   for file in view.files {
     files[file.path] = true
   }
+  for path, _ in view.texts {
+    if !files.contains(path) {
+      issue(
+        diagnostics, "orphan_text", path, "decoded text has no inventory file record",
+      )
+    }
+  }
   for directory in view.directories {
     check_path(directory) catch {
       Invalid(message) =>

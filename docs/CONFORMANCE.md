@@ -11,7 +11,7 @@ as valid; that result alone does not prove the bag violates the RFC.
 | 2.1.3 | One or more payload manifests, hex lengths/case, separator, every file exactly once, escaped filenames | Other algorithms and optional legacy checksum-tool quirks |
 | 2.2.1 | Forbid payload/tagmanifest entries; include every payload manifest; verify raw-byte digests; warn on different optional tag sets | Wider compatibility fixtures |
 | 2.2.2 | Metadata order/repetitions, continuation syntax; Payload-Oxum uniqueness, numeric syntax, counts; local receiving profiles | Wider receiving agreements |
-| 2.2.3 | Absolute scheme tokens, nonnegative or unknown length, safe payload path, per-manifest membership, local size | Full URI grammar and separately authorized remote fetching |
+| 2.2.3 | Parse/write offline plans; absolute scheme, URI characters/escapes, nonnegative or unknown length, safe payload path, per-manifest membership, local size | Full URI grammar and separately authorized remote fetching |
 | 2.2.4 | Arbitrary tag files checked if listed; content ignored | None within current host restrictions |
 | 2.3 | LF, CR, CRLF; UTF-8 text without BOM | Other encodings |
 | 2.4 | SHA-256/SHA-512; default SHA-512 creation; non-destructive manifest upgrade | Legacy algorithms |
@@ -22,6 +22,11 @@ as valid; that result alone does not prove the bag violates the RFC.
 The library's `FileRecord` contract is trusted input from its host. A caller
 that supplies fabricated digests can fabricate the result. The shipped CLI
 computes streaming digests using Node's maintained cryptographic implementation.
+Directory relationships and text-to-file membership are checked, but cannot
+authenticate fabricated hashes or prove that supplied text matches actual bytes.
+The writer also refuses leading-space/TAB root-relative paths and mixed digest
+lengths rather than producing an ambiguous or inconsistent manifest. These are
+documented input-policy restrictions, not additional RFC requirements.
 
 ## Independent verification
 

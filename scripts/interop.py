@@ -125,6 +125,37 @@ class Interop(unittest.TestCase):
         self.assertIn("error", run("create", source, output, code=2))
         self.assertEqual((output / "bagit.txt").read_bytes(), before)
 
+    def test_create_never_replaces_dangling_output_symlink(self):
+        source = self.base / "source"
+        payload(source)
+        output = self.base / "dangling-output"
+        target = self.base / "absent-target"
+        try:
+            output.symlink_to(target, target_is_directory=True)
+        except OSError:
+            self.skipTest("OS does not permit symlink creation for this user")
+        before = set(self.base.iterdir())
+        result = run("create", source, output, code=2)
+        self.assertIn("already exist", result["error"])
+        self.assertTrue(output.is_symlink())
+        self.assertEqual(output.readlink(), target)
+        self.assertFalse(target.exists())
+        self.assertEqual(set(self.base.iterdir()), before)
+
+    def test_upgrade_never_replaces_dangling_output_symlink(self):
+        _, original = self.moon_bag("--sha256")
+        output = self.base / "dangling-upgrade"
+        target = self.base / "absent-target"
+        try:
+            output.symlink_to(target, target_is_directory=True)
+        except OSError:
+            self.skipTest("OS does not permit symlink creation for this user")
+        before = set(self.base.iterdir())
+        self.assertIn("already exist", run("upgrade", original, output, "--sha512", code=2)["error"])
+        self.assertTrue(output.is_symlink())
+        self.assertEqual(output.readlink(), target)
+        self.assertEqual(set(self.base.iterdir()), before)
+
     def test_output_cannot_be_inside_source(self):
         source = self.base / "source"
         payload(source)

@@ -67,3 +67,12 @@ test "ordinary empty nested directories remain permitted" {
   view.directories.append(["data/empty", "notes", "notes/empty"])
   assert_true(validate(view).valid)
 }
+
+///|
+test "decoded text without a corresponding file is rejected" {
+  let view = fixture()
+  view.texts["notes.txt"] = "not an actual inventory file"
+  let report = validate(view)
+  assert_false(report.valid)
+  assert_true(report.has_code("orphan_text"))
+}

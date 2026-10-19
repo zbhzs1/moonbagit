@@ -24,6 +24,11 @@ function directory(root) {
   return fs.realpathSync(absolute);
 }
 
+function pathEntryExists(target) {
+  // existsSync follows symlinks and incorrectly treats a dangling link as absent.
+  return fs.lstatSync(target, { throwIfNoEntry: false }) !== undefined;
+}
+
 function walk(root) {
   const files = [];
   const directories = [];
@@ -119,7 +124,7 @@ function scan(value) {
 function prepare({ source, output }, wholeBag = false) {
   const root = directory(source);
   const destination = path.resolve(output);
-  if (fs.existsSync(destination)) throw new Error('output must not already exist');
+  if (pathEntryExists(destination)) throw new Error('output must not already exist');
   const parent = directory(path.dirname(destination));
   const resolvedDestination = path.join(parent, path.basename(destination));
   const relative = path.relative(root, resolvedDestination);
@@ -164,7 +169,7 @@ function commit({ root, output }) {
   const target = path.resolve(output);
   const resolved = path.join(directory(path.dirname(target)), path.basename(target));
   if (stages.get(stage) !== resolved) throw new Error('unknown staging transaction');
-  if (fs.existsSync(resolved)) throw new Error('output appeared while creating bag; staging retained');
+  if (pathEntryExists(resolved)) throw new Error('output appeared while creating bag; staging retained');
   // Callers must keep source/output trees quiescent; this is not a lock service.
   fs.renameSync(stage, resolved);
   stages.delete(stage);

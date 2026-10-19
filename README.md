@@ -70,7 +70,7 @@ It also exports `parse_profile`, `validate_profile`, `plan_upgrade`, and
 Add the published library to an independent MoonBit project:
 
 ```powershell
-moon add zbhzs1/moonbagit@0.2.0
+moon add zbhzs1/moonbagit@0.2.1
 ```
 
 Add `"zbhzs1/moonbagit" @bag` to the consumer package's `import` block. Then call
@@ -84,6 +84,9 @@ and strictly decoded text tags. Callers must supply accurate records and hashes.
 The directory list must include every parent directory, including empty
 directories. Duplicate/unsafe directory names, file/directory collisions and
 standard tag filenames used as directories are rejected rather than trusted.
+Every decoded-text entry must refer to an inventory file; a phantom metadata
+entry cannot satisfy a receiving profile. Text bytes and digests still remain
+the host's responsibility and cannot be authenticated by these structural checks.
 `validate` does not read files or compute hashes itself. The CLI supplies these
 through a small Node.js adapter using streaming `node:crypto` hashes; there is
 no custom cryptographic implementation. The pure core also runs on WASM-GC.
@@ -167,6 +170,10 @@ percent escapes and token structure, not scheme-specific authority or every URI
 grammar rule. URI strings must already use percent encoding where necessary;
 payload paths use the separate BagIt path encoding. Case-only collisions produce warnings. Portable
 path restrictions intentionally reject some otherwise legal Unix filenames.
+Manifest writing rejects root-relative tag paths starting with a space or TAB:
+the reader cannot distinguish them from the separator without losing characters.
+Whitespace inside paths (for example `data/ notes.txt`) is preserved. A manifest
+writer call must use one digest length consistently, not mix SHA-256 and SHA-512.
 
 The CLI supports 100,000 files and 100,000 directories, 16 MiB per standard text
 tag and 64 MiB total standard text. Payload hashing is streaming. File sizes
@@ -176,6 +183,7 @@ service. Keep the source, destination and scanned bag quiescent during an
 operation. Creation uses a sibling staging directory and renames it only after
 validation; failed staging directories are retained for inspection. It does
 not promise crash durability or race-free publication against another writer.
+Existing output entries, including dangling symlinks, are refused.
 
 ## Verification
 
@@ -214,6 +222,9 @@ the documented BagIt subset and local receiving/upgrade workflows, not a backup,
 evidence-ledger or network-transfer service. [Verification details](docs/VERIFICATION.md)
 separate observed checks from future work. Competition acceptance is decided
 by the organizers, not by test count or a configured workflow.
+The [architecture and review map](docs/REVIEW.md) links each declared capability
+to its implementation and checks, and explains the difference from generic
+manifest, evidence-pack and backup tools.
 
 ## License
 

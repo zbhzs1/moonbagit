@@ -35,6 +35,30 @@ fn has_profile_code(report : ProfileReport, code : String) -> Bool {
 }
 
 ///|
+test "phantom metadata cannot satisfy receiving profile without a file" {
+  let texts = create_tags([])
+  let files = texts
+    .to_array()
+    .filter_map(entry => {
+      let (path, text) = entry
+      if path == "bag-info.txt" {
+        None
+      } else {
+        Some(FileRecord::{
+          path,
+          size: text.length().to_int64(),
+          digests: Map([]),
+        })
+      }
+    })
+  texts["bag-info.txt"] = "BagIt-Profile-Identifier: urn:example:research\n"
+  let view : BagView = { files, directories: ["data"], texts, }
+  let report = validate_profile(view, parse_profile(profile_fixture_json()))
+  assert_false(report.conforms)
+  assert_true(report.bag.has_code("orphan_text"))
+}
+
+///|
 test "minimal directory profile defaults and successful receiving" {
   let profile = parse_profile(profile_fixture_json())
   assert_eq(profile.identifier, "urn:example:research")
@@ -329,6 +353,12 @@ test "profile never turns a corrupt bag into a conforming bag" {
 ///|
 test "upgrade plan preserves old manifests and adds missing algorithm" {
   let view = fixture()
+  for
+    name in [
+      "manifest-sha512.txt", "tagmanifest-sha256.txt", "tagmanifest-sha512.txt",
+    ] {
+    ignore(view.texts.remove(name))
+  }
   let view = {
     ..view,
     files: view.files.filter(f => {
