@@ -176,10 +176,32 @@ pub fn render_manifest(entries : Array[Entry]) -> String raise FormatError {
 }
 
 ///|
+fn metadata_label(label : String) -> Unit raise FormatError {
+  guard label != "" &&
+    !label.contains(":") &&
+    label.trim(chars=" \t").to_owned() == label &&
+    label.iter().all(c => c == '\t' || (c >= '\u0020' && c != '\u007F')) else {
+    raise Invalid(
+      "metadata label must not contain boundary whitespace, a colon or control characters",
+    )
+  }
+}
+
+///|
+fn metadata_value(value : String) -> Unit raise FormatError {
+  guard value
+    .iter()
+    .all(c => c == '\t' || c == '\n' || (c >= '\u0020' && c != '\u007F')) else {
+    raise Invalid("metadata value contains a control character")
+  }
+}
+
+///|
 pub fn parse_metadata(text : String) -> Array[Metadata] raise FormatError {
   let result : Array[Metadata] = []
   for row in lines(text) {
     guard row != "" else { raise Invalid("empty metadata line") }
+    metadata_value(row)
     if linear_unit(row[0]) {
       guard result.length() > 0 else {
         raise Invalid("metadata continuation without a field")
@@ -195,9 +217,7 @@ pub fn parse_metadata(text : String) -> Array[Metadata] raise FormatError {
         raise Invalid("metadata colon missing")
       }
       let label = row[:colon].to_owned()
-      guard label != "" && label.trim(chars=" \t").to_owned() == label else {
-        raise Invalid("invalid metadata label")
-      }
+      metadata_label(label)
       guard colon + 1 < row.length() && linear_unit(row[colon + 1]) else {
         raise Invalid("metadata requires whitespace after colon")
       }
@@ -211,15 +231,15 @@ pub fn parse_metadata(text : String) -> Array[Metadata] raise FormatError {
 pub fn render_metadata(fields : Array[Metadata]) -> String raise FormatError {
   let out = StringBuilder()
   for field in fields {
-    guard field.label != "" &&
-      !field.label.contains(":") &&
-      !field.label.contains("\r") &&
-      !field.label.contains("\n") &&
-      field.label.trim(chars=" \t").to_owned() == field.label else {
-      raise Invalid("invalid metadata label")
-    }
-    guard !field.value.contains("\r") else {
-      raise Invalid("metadata values use LF for continuations")
+    metadata_label(field.label)
+    metadata_value(field.value)
+    let parts = field.value.split("\n").collect()
+    for i in 1..<parts.length() {
+      guard parts[i].is_empty() || !linear_unit(parts[i][0]) else {
+        raise Invalid(
+          "leading continuation whitespace cannot be preserved by BagIt metadata; normalize the value explicitly",
+        )
+      }
     }
     let value = field.value.replace_all(old="\n", new="\n ")
     out.write_string(field.label + ": " + value + "\n")

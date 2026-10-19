@@ -29,6 +29,11 @@ Default creation uses SHA-512; `--sha256` and `--both` select other supported
 manifest sets. Metadata is an ordered JSON array of `{ "label", "value" }`
 objects, allowing repeated labels and multi-line values. `Payload-Oxum` is
 computed by MoonBagIt and cannot be supplied by the caller.
+Metadata rejects NUL, terminal escape and other control characters except TAB
+and value LF. This is a conservative input policy, not a claim that every such
+restriction is mandated by RFC 8493. Continuation indentation is syntax in
+BagIt: the writer rejects values with leading spaces/tabs after LF rather than
+silently losing those characters when read back. Normalize such values explicitly.
 
 ```text
 example-bag/
