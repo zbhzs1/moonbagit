@@ -135,10 +135,11 @@ class Interop(unittest.TestCase):
         except OSError:
             self.skipTest("OS does not permit symlink creation for this user")
         before = set(self.base.iterdir())
+        link_before = output.readlink()
         result = run("create", source, output, code=2)
         self.assertIn("already exist", result["error"])
         self.assertTrue(output.is_symlink())
-        self.assertEqual(output.readlink(), target)
+        self.assertEqual(output.readlink(), link_before)
         self.assertFalse(target.exists())
         self.assertEqual(set(self.base.iterdir()), before)
 
@@ -151,9 +152,10 @@ class Interop(unittest.TestCase):
         except OSError:
             self.skipTest("OS does not permit symlink creation for this user")
         before = set(self.base.iterdir())
+        link_before = output.readlink()
         self.assertIn("already exist", run("upgrade", original, output, "--sha512", code=2)["error"])
         self.assertTrue(output.is_symlink())
-        self.assertEqual(output.readlink(), target)
+        self.assertEqual(output.readlink(), link_before)
         self.assertEqual(set(self.base.iterdir()), before)
 
     def test_output_cannot_be_inside_source(self):
