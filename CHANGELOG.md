@@ -14,6 +14,9 @@
 - Document architecture, actual adjacent-project differences and reproducible
   review evidence without claiming organizer approval or complete RFC support.
 
+The published ZIP corresponds to source revision `51debbe`. Subsequent
+0.2.1 published-consumer and verification-note updates do not change its implementation.
+
 ## 0.2.0 - 2026-10-19
 
 - Validate directory inventories: ancestor coverage, duplicate directories,

@@ -1,6 +1,7 @@
 """Install the published library in a fresh project; never import this checkout."""
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 
 FILES = {
@@ -8,7 +9,7 @@ FILES = {
 version = "0.1.0"
 preferred_target = "wasm-gc"
 import {
-  "zbhzs1/moonbagit@0.2.0",
+  "zbhzs1/moonbagit@0.2.1",
 }
 ''',
     "moon.pkg": '''import {
@@ -50,7 +51,20 @@ pkgtype(kind: "executable")
     guard entries.length() == 1 && entries[0].path == "data/a%.txt" else { abort("consumer fetch round trip failed") }
     let invalid_view : @bag.BagView = { files: records, directories: ["data", "bagit.txt"], texts: tags, }
     assert_true(@bag.validate(invalid_view).has_code("file_directory_collision"))
-    println("Mooncakes consumer 0.2.0: declaration, creation, receiving profile, upgrade, portability, fetch and inventory checks passed")
+    let orphan_texts = tags.copy()
+    orphan_texts["missing.txt"] = "phantom metadata"
+    let orphan_view : @bag.BagView = { files: records, directories: ["data"], texts: orphan_texts, }
+    assert_true(@bag.validate(orphan_view).has_code("orphan_text"))
+    let rejected = try {
+      ignore(@bag.render_manifest([
+        @bag.Entry::{ path: " notes.bin", checksum: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad", },
+      ]))
+      false
+    } catch {
+      _ => true
+    }
+    assert_true(rejected)
+    println("Mooncakes consumer 0.2.1: declaration, creation, receiving profile, upgrade, portability, fetch and inventory checks passed")
   } catch {
     error => abort(error.to_string())
   }
@@ -65,10 +79,12 @@ with tempfile.TemporaryDirectory(prefix="moonbagit-consumer-") as temporary:
     for args in (["update"], ["check", "--target", "js", "--deny-warn"],
                  ["run", ".", "--target", "wasm-gc"], ["run", ".", "--target", "js"]):
         result = subprocess.run(["moon", *args], cwd=root, text=True, encoding="utf-8",
-                                capture_output=True, check=True, timeout=180)
+                                capture_output=True, timeout=180)
         print(result.stdout, end="")
+        print(result.stderr, end="", file=sys.stderr)
+        result.check_returncode()
         if args[0] == "run":
-            assert "Mooncakes consumer 0.2.0" in result.stdout, result.stdout
+            assert "Mooncakes consumer 0.2.1" in result.stdout, result.stdout
     package = root / ".mooncakes" / "zbhzs1" / "moonbagit"
     assert package.is_dir() and not package.is_symlink(), "registry package was not installed"
     print("PASS: fresh published-package consumer on JS and WASM-GC")
