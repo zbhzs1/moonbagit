@@ -9,6 +9,8 @@
 - Reject orphan decoded-text entries so nonexistent metadata cannot satisfy a
   receiving profile through an inconsistent host inventory.
 - Add six core regressions (90 total) and two CLI regressions (37 total).
+- Normalize native MoonBit module/package files to LF, preventing fresh Windows
+  checkouts from failing October 16 toolchain format checks under autocrlf.
 - Document architecture, actual adjacent-project differences and reproducible
   review evidence without claiming organizer approval or complete RFC support.
 
