@@ -1,13 +1,13 @@
 # Observed verification
 
-Date: 2026-10-11. Source tests and commands are in this repository; this document
+Date: 2026-10-19. Source tests and commands are in this repository; this document
 does not promise full RFC conformance, production performance or committee approval.
 
 ## Local checks
 
 - MoonBit 0.1.20260920 / moonc 0.10.14: strict JS check, JS build and format check.
-- 65 distinct MoonBit unit tests on JS and WASM-GC (not 130 distinct tests).
-- 28 CLI/independent-tool scenarios against both published bagit-python 1.9.0
+- 84 distinct MoonBit unit tests on JS and WASM-GC (not 168 distinct tests).
+- 35 CLI/independent-tool scenarios against both published bagit-python 1.9.0
   source and pinned upstream source. Windows skips newline filenames and
   unprivileged symlink creation; see CONFORMANCE.md for source identities.
 - Five independently maintained v1.0 fixtures from LibraryOfCongress's
@@ -15,6 +15,9 @@ does not promise full RFC conformance, production performance or committee appro
   One valid fixture accepted and four invalid fixtures rejected. This small
   externally supplied suite is not proof of exhaustive RFC coverage.
 - One 20 MiB binary payload exercised streaming hashing and independent validation.
+- New cases cover invalid host directory inventories, lossless metadata writing,
+  offline fetch writing, pre-staging configuration rejection, receiving-profile
+  failures without output publication, and source preservation.
 
 ## Real filesystem measurement
 
@@ -38,6 +41,10 @@ claim. The separate synthetic inventory unit test covers 10,000 file records
 without doing I/O and is not substituted for this measurement.
 
 ## Remote and release evidence
+
+Version 0.2.0 local checks above are complete. Its remote CI, registry publication
+and fresh-consumer results will be recorded only after they actually complete.
+The evidence below is the previous 0.1.0 release, not proof of the new release.
 
 Public repository: https://github.com/zbhzs1/moonbagit
 
