@@ -40,6 +40,29 @@ jobs:
       - run: moon build --target js
       - run: python -m pip install bagit==1.9.0
       - run: python scripts/interop.py
+      - name: Record released bagit-python bidirectional evidence
+        run: python scripts/interop_report.py --source-id PyPI:bagit==1.9.0 --output interop-evidence/released
+      - name: Fetch pinned native BagIt 1.0 producer
+        uses: actions/checkout@v4
+        with:
+          repository: LibraryOfCongress/bagit-python
+          ref: 4bd2713cedbe1f8e634567c20ef0dded9622011d
+          path: .interop/bagit-python
+          persist-credentials: false
+      - name: Install isolated pinned producer
+        run: python -m pip install --no-deps --target .interop/upstream ./.interop/bagit-python
+        env:
+          SETUPTOOLS_SCM_PRETEND_VERSION: 0.0.0
+      - name: Record native 1.0 bidirectional evidence without declaration rewriting
+        run: python scripts/interop_report.py --bagit-path .interop/upstream --source-id LibraryOfCongress/bagit-python@4bd2713cedbe1f8e634567c20ef0dded9622011d --require-native-1 --output interop-evidence/native-1.0
+      - name: Upload reports and actual generated bags for independent review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bagit-bidirectional-${{ matrix.os }}
+          path: interop-evidence/
+          if-no-files-found: error
+          retention-days: 30
       - name: Fetch pinned independent conformance fixtures
         run: git -c core.autocrlf=false clone https://github.com/LibraryOfCongress/bagit-conformance-suite.git ../bagit-conformance-suite
       - name: Pin fixture revision

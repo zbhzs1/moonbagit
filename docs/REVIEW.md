@@ -47,7 +47,7 @@ it is not a new cryptographic algorithm or a hostile-filesystem sandbox.
 | CI checks, build, tests | .github/workflows/ci.yml; Linux/Windows, strict check, format, JS build, JS/WASM-GC core tests |
 | Runnable library example | `moon run examples/core --target wasm-gc`; CLI examples require `moon build --target js` first |
 | Core failure paths | Unit tests for syntax, paths, coverage, inventories, metadata and profiles; scripts/interop.py for corruption, no-overwrite, source preservation and independent-tool interoperability |
-| External checks | scripts/conformance.py uses pinned unmodified external fixtures; scripts/interop.py uses bagit-python, not a second handwritten BagIt implementation |
+| External checks | scripts/conformance.py uses pinned unmodified external fixtures; scripts/interop.py uses bagit-python, not a second handwritten BagIt implementation; docs/INTEROPERABILITY.md and scripts/interop_report.py provide the bidirectional matrix and downloadable real-bag/JSON evidence |
 | Registry delivery | [Mooncakes package](https://mooncakes.io/docs/zbhzs1/moonbagit); docs/VERIFICATION.md records version/hash; scripts/consumer.py installs from registry in a new temporary project |
 | Open-source compliance | MIT LICENSE; THIRD_PARTY.md records specification and test-tool sources/licenses; external fixtures are not claimed as original implementation |
 

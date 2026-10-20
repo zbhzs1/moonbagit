@@ -187,6 +187,10 @@ Existing output entries, including dangling symlinks, are refused.
 
 ## Verification
 
+For direction-by-direction reproduction, independent validator results and CI
+downloads of the actual bags and reports, see
+[bidirectional bagit-python verification](docs/INTEROPERABILITY.md).
+
 ```powershell
 moon test --target js
 moon test --target wasm-gc

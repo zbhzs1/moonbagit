@@ -3,5 +3,6 @@ target/
 .mooncakes/
 .interop/
 .interop-example/
+interop-evidence/
 .moonbagit-*/
 __pycache__/

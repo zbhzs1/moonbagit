@@ -30,6 +30,12 @@ documented input-policy restrictions, not additional RFC requirements.
 
 ## Independent verification
 
+The [bidirectional verification guide](INTEROPERABILITY.md) gives exact producer
+and receiver operations, the released/native-version distinction, the six-case
+positive matrix, eighteen independent negative controls, and downloadable CI
+evidence. `scripts/interop_report.py` retains real bags and machine-readable
+results rather than relying only on a test-count summary.
+
 Test dependency: LibraryOfCongress/bagit-python, CC0. PyPI source release 1.9.0
 archive SHA-256: `9455006c2d1df88be95ec1fccabc5ea623389589ea4c85b3d85bd256f29d7656`.
 The local test installation built this exact source with version metadata
