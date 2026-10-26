@@ -53,7 +53,7 @@ measurement above is historical, not a claim that it was repeated for 0.2.1.
 
 ## Remote and release evidence
 
-### Version 0.4.0 development verification
+### Version 0.4.0
 
 The new implementation has 133 distinct core tests (the prior 95 plus 38),
 all passed locally on JS and WASM-GC, along with strict checks, formatting and
@@ -72,9 +72,33 @@ not mistake that local metadata for an upstream release identity. A pip build
 dependency download stalled and was cancelled; no unsuccessful installation
 is claimed as a passed dependency check.
 
-Source CI, immutable release provenance and the 0.4.0 registry consumer will be
-recorded after they complete. Existing 0.3.0 release/consumer evidence below is
-not relabelled as evidence of a newer published version.
+Published source and tag `v0.4.0` are
+`d067f64d523cfe588a4fd703b41042e383709d9e`. Both OS jobs passed in
+[source CI 40303108408](https://github.com/zbhzs1/moonbagit/actions/runs/40303108408).
+The actual Windows job log confirms 133 tests on both targets, 37 CLI scenarios
+(one filename skip), both 6-positive/18-negative bidirectional matrices,
+17 RFC/receipt cases (one POSIX filename skip), 16 preservation cases and five
+unmodified external fixtures. No local Windows permission skip is being
+substituted for these CI symlink checks. The source run still used the old
+0.3.0 registry consumer; the consumer was updated after actual 0.4.0 publication.
+
+Mooncakes returned `200 OK` for `zbhzs1/moonbagit@0.4.0`; the public registry
+records creation at `2026-10-26T09:57:13.740747Z`, MIT and not yanked.
+The registry checksum equals the submitted ZIP SHA-256:
+`6bc1cfe60e50eba41fffb18c9fb3ed41760725a290d94328440327265759a398`.
+A new temporary consumer downloaded that exact version from the public registry
+without path substitution. Strict JS check and both JS/WASM-GC runs passed,
+including new public incremental-reader, audit, snapshot round-trip/comparison,
+revalidation, receiving-policy, transfer and delivery/collection APIs. These
+consumer/evidence updates postdate the immutable ZIP; do not move the release
+tag to a later documentation commit. Temporary toolchain credentials were
+deleted; the user's original credentials were left unchanged.
+
+Non-test implementation at that revision: 20 MoonBit files, 4,535 physical lines
+and 4,099 nonblank/noncomment lines, including the actual MoonBit CLI but
+excluding runnable examples, tests, generated interfaces, build output, Node,
+Python and third-party sources. This is a transparent size measurement, not an
+official minimum, quality certificate or organizer approval.
 
 ### Version 0.3.0
 

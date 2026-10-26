@@ -24,8 +24,10 @@
 - Retain original RFC and bidirectional interoperability tests; add 38 core
   preservation regressions and 16 real-filesystem CLI cases on both CI platforms.
 
-The preserved 0.3.0 registry evidence below remains historical until the new
-version's own source CI, publication and registry consumer are recorded.
+Published source/tag: `d067f64`. Source CI passed both platforms; 0.4.0 was
+formally published and a fresh registry consumer passed on both core backends.
+See docs/VERIFICATION.md for the immutable ZIP checksum and exact source versus
+post-publication evidence distinction. Earlier release records remain historical.
 
 ## 0.3.0 - 2026-10-26
 

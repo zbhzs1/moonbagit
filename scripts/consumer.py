@@ -9,7 +9,7 @@ FILES = {
 version = "0.1.0"
 preferred_target = "wasm-gc"
 import {
-  "zbhzs1/moonbagit@0.3.0",
+  "zbhzs1/moonbagit@0.4.0",
 }
 ''',
     "moon.pkg": '''import {
@@ -36,7 +36,15 @@ pkgtype(kind: "executable")
     tags["bag-info.txt"] = "Payload-Oxum: 0.0\\nBagIt-Profile-Identifier: urn:example:consumer\\n"
     let records = tags.to_array().map(entry => {
       let (path, text) = entry
-      @bag.FileRecord::{ path, size: text.length().to_int64(), digests: Map([]), }
+      // Fixed raw-byte SHA-512 values for these three known ASCII fixture tags.
+      let digest = if path == "bagit.txt" {
+        "1d73ae108d4109b61f56698a5e19ee1f8947bdf8940bbce6adbe5e0940c2363caace6a547b4f1b3ec6a4fd2b7fa845e9cb9d28823bc72c59971718bb26f2fbd8"
+      } else if path == "bag-info.txt" {
+        "c08b51541afbdb96138230017fd35ffa3449f181c4187ef8d4873ad4ccf3905f7214016ac0e18b37e737d08d6b66882c315abe7bef117b36f1649395fe150cd4"
+      } else {
+        "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e"
+      }
+      @bag.FileRecord::{ path, size: text.length().to_int64(), digests: {"sha512": digest}, }
     })
     let view : @bag.BagView = { files: records, directories: ["data"], texts: tags, }
     let report = @bag.validate_profile(view, profile)
@@ -82,7 +90,28 @@ pkgtype(kind: "executable")
     fetch_records.push(@bag.FileRecord::{path: "fetch.txt", size: 0L, digests: Map([])})
     let fetch_view : @bag.BagView = { files: fetch_records, directories: ["data"], texts: empty_fetch_tags }
     assert_true(@bag.plan_fetch(fetch_view).is_empty())
-    println("Mooncakes consumer 0.3.0: declaration, creation, receiving profile, upgrade, portability, URI grammar, legacy algorithms, encoding and fetch preflight passed")
+    let reader = @bag.manifest_reader("manifest-sha512.txt", max_entries=10)
+    reader.feed("")
+    assert_true(reader.finish().entries.is_empty())
+    assert_true(@bag.inspect_manifest("manifest-sha512.txt", "").diagnostics.is_empty())
+    let audit = @bag.audit_bag(view)
+    assert_true(audit.report.valid)
+    assert_true(@bag.group_diagnostics(audit.report.diagnostics).is_empty())
+    let captured = @bag.capture_snapshot(view, label="registry-consumer")
+    let loaded = @bag.parse_snapshot(@bag.snapshot_document(captured))
+    assert_true(@bag.compare_snapshots(captured, loaded).byte_identical)
+    assert_true(@bag.verify_snapshot_inventory(loaded, records, ["data"]).matches)
+    assert_true(@bag.revalidate_snapshot(loaded, view).preserved)
+    let policy : @bag.ReceivingPolicy = {
+      ..@bag.receiving_policy("consumer"), require_tag_protection: false,
+    }
+    let policy = @bag.parse_receiving_policy(@bag.receiving_policy_document(policy))
+    assert_true(@bag.evaluate_receiving_policy(view, policy).accepted)
+    assert_true(@bag.verify_delivery(view, view, @bag.ExactCopy).accepted)
+    let options = @bag.parse_transfer_options({"format": "moonbagit-transfer-options/1"})
+    assert_eq(@bag.plan_transfer(fetch_view, options).pending_files, 0)
+    assert_true(@bag.evaluate_collection([{identifier: "one", view}], policy).accepted)
+    println("Mooncakes consumer 0.4.0: published format, preservation, incremental input, policy, transfer and delivery APIs passed")
   } catch {
     error => abort(error.to_string())
   }
@@ -102,7 +131,7 @@ with tempfile.TemporaryDirectory(prefix="moonbagit-consumer-") as temporary:
         print(result.stderr, end="", file=sys.stderr)
         result.check_returncode()
         if args[0] == "run":
-            assert "Mooncakes consumer 0.3.0" in result.stdout, result.stdout
+            assert "Mooncakes consumer 0.4.0" in result.stdout, result.stdout
     package = root / ".mooncakes" / "zbhzs1" / "moonbagit"
     assert package.is_dir() and not package.is_symlink(), "registry package was not installed"
     print("PASS: fresh published-package consumer on JS and WASM-GC")
