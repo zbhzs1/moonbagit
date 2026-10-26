@@ -108,12 +108,13 @@ export async function receive(args) {
   const plan = checked('fetch-plan', config.source);
   // Authorize every URI before making even the first request or staging a copy.
   const transfers = plan.entries.map(entry => {
+    const size = entry.size ?? null;
     const url = new URL(entry.url);
     if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || !config.origins.has(url.origin)) {
       throw new Error(`fetch origin or transport is not authorized: ${url.origin}`);
     }
-    if (entry.size !== null && BigInt(entry.size) > BigInt(config.maxBytes)) throw new Error('fetch length exceeds receipt budget');
-    return { ...entry, parsed: url };
+    if (size !== null && BigInt(size) > BigInt(config.maxBytes)) throw new Error('fetch length exceeds receipt budget');
+    return { ...entry, size, parsed: url };
   });
   const stage = prepare(config, true);
   try {
