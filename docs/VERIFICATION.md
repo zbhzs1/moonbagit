@@ -1,6 +1,6 @@
 # Observed verification
 
-Date: 2026-10-19. Source tests and commands are in this repository; this document
+Updated: 2026-10-26. Source tests and commands are in this repository; this document
 does not promise full RFC conformance, production performance or committee approval.
 
 ## Local checks
@@ -52,6 +52,37 @@ with a valid result on the same local Node/Python versions. The 10,000-file
 measurement above is historical, not a claim that it was repeated for 0.2.1.
 
 ## Remote and release evidence
+
+### Version 0.3.0
+
+Published source revision `144b29a75bdea1c245a4908279c0e36775fce541` passed
+Linux and Windows in
+[run 40290038265](https://github.com/zbhzs1/moonbagit/actions/runs/40290038265).
+Both platforms ran 95 core tests on each JS/WASM-GC target, strict checking,
+formatting, JS build, the existing 37 CLI scenarios, five external fixtures,
+both bagit-python evidence matrices and the new 17-case RFC/receipt suite.
+Linux ran all 17 new cases; Windows skipped only the POSIX-only filename case.
+The earlier 17-case run exposed omitted optional fetch sizes at the JSON/host
+boundary; that failure was fixed, not ignored or removed. All tests passed
+before formal publication. The source run still consumed 0.2.1; the current
+consumer script was updated after publishing 0.3.0.
+
+Mooncakes `zbhzs1/moonbagit@0.3.0` was formally published with `200 OK` at
+2026-10-26T08:09:37.614593Z. Its registry record is not yanked and declares MIT.
+The registry SHA-256 matches the submitted ZIP:
+`d29d2cddc45724120ee55751a18ad00dd5eb807636bede884a262d6a5d85ef68`.
+A new temporary consumer installed this exact public registry version without
+path overrides or temporary login credentials. Strict JS checking, JS and
+WASM-GC execution passed, including the public URI validator, legacy algorithms,
+declared-encoding creation and fetch preflight APIs. `scripts/consumer.py`
+reproduces this version-specific test in subsequent main CI. These consumer
+and evidence-note updates postdate the immutable published ZIP; the release
+tag remains attached to the actual published source, not a later notes commit.
+
+The [requirement audit](RFC8493-AUDIT.md) maps required behavior to implementation
+and executable tests, and distinguishes mandatory format behavior from resource
+and transport policy. Non-UTF-8 codec fixtures are explicitly adapted fixtures,
+not falsely described as unmodified independent-producer output.
 
 ### Version 0.2.1
 

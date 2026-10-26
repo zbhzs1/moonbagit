@@ -9,7 +9,7 @@ FILES = {
 version = "0.1.0"
 preferred_target = "wasm-gc"
 import {
-  "zbhzs1/moonbagit@0.2.1",
+  "zbhzs1/moonbagit@0.3.0",
 }
 ''',
     "moon.pkg": '''import {
@@ -64,7 +64,25 @@ pkgtype(kind: "executable")
       _ => true
     }
     assert_true(rejected)
-    println("Mooncakes consumer 0.2.1: declaration, creation, receiving profile, upgrade, portability, fetch and inventory checks passed")
+    @bag.check_fetch_url("https://[2001:db8::1]:443/a?x=%25")
+    let rejected_uri = try {
+      @bag.check_fetch_url("https://[broken/a")
+      false
+    } catch { _ => true }
+    assert_true(rejected_uri)
+    assert_eq(@bag.algorithm("md5"), @bag.Md5)
+    assert_eq(@bag.algorithm("sha1"), @bag.Sha1)
+    let encoded = @bag.parse_declaration("BagIt-Version: 1.0\\nTag-File-Character-Encoding: ISO-8859-1\\n")
+    assert_eq(encoded.encoding, "ISO-8859-1")
+    let encoded_tags = @bag.create_tags([], encoding="UTF-16")
+    assert_true(encoded_tags["bagit.txt"].contains("UTF-16"))
+    let empty_fetch_tags = tags.copy()
+    empty_fetch_tags["fetch.txt"] = ""
+    let fetch_records = records.copy()
+    fetch_records.push(@bag.FileRecord::{path: "fetch.txt", size: 0L, digests: Map([])})
+    let fetch_view : @bag.BagView = { files: fetch_records, directories: ["data"], texts: empty_fetch_tags }
+    assert_true(@bag.plan_fetch(fetch_view).is_empty())
+    println("Mooncakes consumer 0.3.0: declaration, creation, receiving profile, upgrade, portability, URI grammar, legacy algorithms, encoding and fetch preflight passed")
   } catch {
     error => abort(error.to_string())
   }
@@ -84,7 +102,7 @@ with tempfile.TemporaryDirectory(prefix="moonbagit-consumer-") as temporary:
         print(result.stderr, end="", file=sys.stderr)
         result.check_returncode()
         if args[0] == "run":
-            assert "Mooncakes consumer 0.2.1" in result.stdout, result.stdout
+            assert "Mooncakes consumer 0.3.0" in result.stdout, result.stdout
     package = root / ".mooncakes" / "zbhzs1" / "moonbagit"
     assert package.is_dir() and not package.is_symlink(), "registry package was not installed"
     print("PASS: fresh published-package consumer on JS and WASM-GC")

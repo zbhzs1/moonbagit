@@ -26,6 +26,9 @@ API additions include `Md5`, `Sha1`, `check_fetch_url`, `plan_fetch` and optiona
 handle the two additional cases. Format support is not an authenticity claim,
 unbounded resource promise or implementation of every URI transport.
 
+The published ZIP corresponds to `144b29a`; subsequent registry-consumer and
+verification-note updates do not change that released implementation.
+
 ## 0.2.1 - 2026-10-19
 
 - Reject manifest writer inputs that mix digest lengths or have ambiguous

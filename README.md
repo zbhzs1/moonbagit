@@ -92,7 +92,8 @@ through a small Node.js adapter using streaming `node:crypto` hashes; there is
 no custom cryptographic implementation. The pure core also runs on WASM-GC.
 
 Creation uses two stages: `create_tags` generates the declaration, metadata and
-payload manifests; after the caller hashes these exact UTF-8 bytes,
+payload manifests; after the caller encodes standard tags using the declaration
+(the declaration itself is always UTF-8) and hashes those exact bytes,
 `create_tag_manifests` generates tag manifests. See the runnable CLI and
 generated interface for the full signatures.
 
