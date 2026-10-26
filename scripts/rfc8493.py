@@ -153,6 +153,21 @@ class Standard(unittest.TestCase):
             moon('create', source, output, '--encoding', encoding, code=2)
             self.assertFalse(output.exists())
 
+    def test_codecs_reject_malformed_bytes_without_replacing_valid_replacement_characters(self):
+        code = '''import { decodeTag } from './bin/host.mjs';
+        for (const [encoding, hex] of [['UTF-8','ff'], ['US-ASCII','80'],
+          ['UTF-16','6100'], ['UTF-16LE','61'], ['UTF-16LE','00d8'], ['Shift_JIS','81']]) {
+          let rejected = false;
+          try { decodeTag(Buffer.from(hex,'hex'), encoding); } catch { rejected = true; }
+          if (!rejected) throw new Error(`malformed ${encoding} accepted`);
+        }
+        if (decodeTag(Buffer.from('ff fefdff'.replaceAll(' ',''),'hex'), 'UTF-16') !== '\\uFFFD') {
+          throw new Error('valid literal replacement character was discarded');
+        }'''
+        result = subprocess.run(['node', '--input-type=module', '-e', code], cwd=ROOT,
+                                capture_output=True, text=True, timeout=30)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_upgrade_preserves_declared_non_utf8_encoding(self):
         for i, encoding in enumerate(('iso-8859-1', 'utf-16', 'shift_jis')):
             with self.subTest(encoding=encoding):
@@ -250,6 +265,19 @@ class Standard(unittest.TestCase):
         root = self.root / 'source'
         moon('fetch', root, self.root / 'too-large', '--allow-origin', origin, '--max-bytes', '1', code=2)
         self.assertFalse((self.root / 'too-large').exists())
+
+    def test_unknown_fetch_length_accepts_valid_bytes_and_enforces_streamed_budget(self):
+        with server() as (origin, _):
+            root = self.incomplete(origin + '/a')
+            fetch = root / 'fetch.txt'
+            fetch.write_text(fetch.read_text(encoding='utf-8').replace(f' {len(BODY)} data/', ' - data/'), encoding='utf-8')
+            bagit.Bag(str(root)).save()
+            result = moon('fetch', root, self.root / 'received', '--allow-origin', origin)
+            self.assertTrue(result['report']['valid'])
+            limited = moon('fetch', root, self.root / 'limited', '--allow-origin', origin,
+                           '--max-bytes', str(len(BODY) - 1), code=2)
+            self.assertIn('budget', limited['error'])
+            self.assertFalse((self.root / 'limited').exists())
 
     def test_fetch_receiving_profile_failure_keeps_staging(self):
         with server() as (origin, _):

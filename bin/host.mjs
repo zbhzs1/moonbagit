@@ -85,7 +85,7 @@ export function decodeTag(bytes, encoding) {
   if (!encoded.equals(bytes) && !['utf16le', 'utf16be', 'utf16'].includes(normalized)) {
     // Some legacy encodings have multiple byte representations. ICU's strict
     // decoder is authoritative for those; never silently accept a replacement.
-    if (decoded === undefined || result.includes('\uFFFD')) throw new Error(`invalid ${encoding} tag bytes`);
+    if (decoded === undefined || result !== decoded) throw new Error(`invalid or non-roundtrippable ${encoding} tag bytes`);
   }
   if (['utf16le', 'utf16be', 'utf16'].includes(normalized)) {
     if (bytes.length % 2) throw new Error('invalid UTF-16 tag bytes');
