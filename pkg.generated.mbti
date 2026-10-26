@@ -9,11 +9,13 @@ import {
 // Values
 pub fn algorithm(String) -> Algorithm raise FormatError
 
+pub fn check_fetch_url(String) -> Unit raise FormatError
+
 pub fn check_path(String) -> Unit raise FormatError
 
 pub fn create_tag_manifests(Array[FileRecord], algorithms? : Array[Algorithm]) -> Map[String, String] raise FormatError
 
-pub fn create_tags(Array[FileRecord], metadata? : Array[Metadata], algorithms? : Array[Algorithm]) -> Map[String, String] raise FormatError
+pub fn create_tags(Array[FileRecord], metadata? : Array[Metadata], algorithms? : Array[Algorithm], encoding? : String) -> Map[String, String] raise FormatError
 
 pub fn decode_path(String) -> String raise FormatError
 
@@ -32,6 +34,8 @@ pub fn parse_metadata(String) -> Array[Metadata] raise FormatError
 pub fn parse_profile(Json) -> Profile raise FormatError
 
 pub fn payload_oxum(Array[FileRecord]) -> String raise FormatError
+
+pub fn plan_fetch(BagView) -> Array[FetchEntry] raise FormatError
 
 pub fn plan_upgrade(BagView, Array[Algorithm]) -> UpgradePlan raise FormatError
 
@@ -57,11 +61,13 @@ pub fn FormatError::to_repr(Self) -> @debug.Repr
 
 // Types and methods
 pub(all) enum Algorithm {
+  Md5
+  Sha1
   Sha256
   Sha512
 } derive(Eq, @debug.Debug)
 pub fn Algorithm::equal(Self, Self) -> Bool
-pub fn Algorithm::hex_length(Self) -> Int
+pub fn Algorithm::hex_length(Self) -> Int32
 pub fn Algorithm::name(Self) -> String
 pub fn Algorithm::not_equal(Self, Self) -> Bool
 pub fn Algorithm::to_repr(Self) -> @debug.Repr
@@ -103,9 +109,10 @@ pub(all) struct FetchEntry {
   url : String
   size : Int64?
   path : String
-} derive(Eq, @debug.Debug)
+} derive(Eq, ToJson, @debug.Debug)
 pub fn FetchEntry::equal(Self, Self) -> Bool
 pub fn FetchEntry::not_equal(Self, Self) -> Bool
+pub fn FetchEntry::to_json(Self) -> Json
 pub fn FetchEntry::to_repr(Self) -> @debug.Repr
 
 pub(all) struct FileRecord {
@@ -177,9 +184,9 @@ pub fn ProfileReport::to_repr(Self) -> @debug.Repr
 pub(all) struct Report {
   complete : Bool
   valid : Bool
-  payload_files : Int
+  payload_files : Int32
   payload_bytes : Int64
-  verified_checksums : Int
+  verified_checksums : Int32
   diagnostics : Array[Diagnostic]
 } derive(ToJson, @debug.Debug)
 pub fn Report::has_code(Self, String) -> Bool

@@ -123,6 +123,15 @@ pub fn validate(view : BagView) -> Report {
   let coverage : Map[String, Map[String, Bool]] = Map([])
   let mut first_tag : Manifest? = None
   for manifest in manifests {
+    if manifest.algorithm == Md5 || manifest.algorithm == Sha1 {
+      issue(
+        diagnostics,
+        "legacy_checksum",
+        manifest.name,
+        "legacy digest verified for interoperability; prefer SHA-256/SHA-512 for new bags",
+        warning=true,
+      )
+    }
     let listed : Map[String, Bool] = Map([])
     for entry in manifest.entries {
       listed[entry.path] = true

@@ -17,6 +17,7 @@ Install the [MoonBit toolchain](https://www.moonbitlang.com/download/) and Node.
 Node.js 24.14.1.
 
 ```powershell
+npm ci --ignore-scripts
 moon check --target js
 moon test --target js
 moon build --target js
@@ -29,9 +30,8 @@ Default creation uses SHA-512; `--sha256` and `--both` select other supported
 manifest sets. Metadata is an ordered JSON array of `{ "label", "value" }`
 objects, allowing repeated labels and multi-line values. `Payload-Oxum` is
 computed by MoonBagIt and cannot be supplied by the caller.
-Metadata rejects NUL, terminal escape and other control characters except TAB
-and value LF. This is a conservative input policy, not a claim that every such
-restriction is mandated by RFC 8493. Continuation indentation is syntax in
+Metadata preserves labels, repetitions, ordering and non-linebreaking characters
+as required by the format; JSON output escapes control characters. Continuation indentation is syntax in
 BagIt: the writer rejects values with leading spaces/tabs after LF rather than
 silently losing those characters when read back. Normalize such values explicitly.
 
@@ -70,7 +70,7 @@ It also exports `parse_profile`, `validate_profile`, `plan_upgrade`, and
 Add the published library to an independent MoonBit project:
 
 ```powershell
-moon add zbhzs1/moonbagit@0.2.1
+moon add zbhzs1/moonbagit@0.3.0
 ```
 
 Add `"zbhzs1/moonbagit" @bag` to the consumer package's `import` block. Then call
@@ -106,13 +106,13 @@ moon run examples/core --target wasm-gc
 
 | Area | Current behavior |
 | --- | --- |
-| Declaration | BagIt 1.0, UTF-8 only; exact field order; no BOM |
-| Payload manifests | SHA-256 and SHA-512; every manifest covers every payload file exactly once |
+| Declaration | BagIt 1.0; declaration always UTF-8 without BOM; remaining standard tags use its declared encoding |
+| Payload manifests | SHA-256, SHA-512 and legacy MD5/SHA-1; every manifest covers every payload file exactly once |
 | Tag manifests | Required payload-manifest coverage; forbid payload and tag-manifest references; check listed arbitrary tags |
 | Metadata | Ordered/repeated fields, continuations; unique and numeric Payload-Oxum |
-| Paths | `/` separators, normative `%25`, `%0D`, `%0A`; no traversal, absolute, NUL, drive or backslash paths |
+| Paths | `/` separators, normative `%25`, `%0D`, `%0A`; reject traversal, absolute, NUL and drive-qualified paths; ordinary POSIX colons/backslashes are not format errors |
 | Checksums | Verify every supported manifest, including all tag manifests |
-| Fetch | Parse/write offline plans and check local coverage/length; missing remote files remain incomplete; no download or URI execution |
+| Fetch | Complete RFC 3986 absolute-URI grammar, coverage/length checks and explicit HTTP(S) retrieval into a new staged output; no automatic URI execution during validation |
 | Additional tags | Opaque content; verify if listed; unprotected tags produce warnings |
 | Host safety | Reject symlinks and special files; no source overwrite; new output only |
 | Receiving profiles | BagIt Profiles 1.4.0 rules for metadata, algorithms, fetch, files/directories and directory serialization constraints |
@@ -160,20 +160,49 @@ Previously unprotected arbitrary tags are included in regenerated tag manifests.
 The pure `plan_upgrade` API only prepares payload manifests: the host must hash
 their exact bytes before calling `create_tag_manifests`.
 
-## Compatibility Boundaries
+## Delivery Endpoint and Safety
 
-This is a **defined subset**, not a claim of complete RFC conformance. Legacy
-BagIt versions, MD5/SHA-1, non-UTF-8 tags, automatic fetch, Unicode normalization
-matching, and general RFC 3986 URI validation are future compatibility work.
-The fetch parser/writer verify an absolute URI scheme, ASCII URI characters,
-percent escapes and token structure, not scheme-specific authority or every URI
-grammar rule. URI strings must already use percent encoding where necessary;
-payload paths use the separate BagIt path encoding. Case-only collisions produce warnings. Portable
-path restrictions intentionally reject some otherwise legal Unix filenames.
+The 0.3.0 delivery target is the BagIt 1.0 format's mandatory creation and
+validation behavior, including optional elements when present. See the
+[requirement-by-requirement audit](docs/RFC8493-AUDIT.md), not just a feature list.
+MD5/SHA-1 are accepted for legacy verification with warnings, not recommended for
+new content. Standard tags are decoded according to the declaration using
+maintained codecs (UTF-8, UTF-16, ISO-8859 variants, Shift_JIS, GB18030 and other
+iconv-lite encodings); unknown host codecs cause an explicit unsupported-codec
+error, not a false statement that the bag violates the RFC. Digests always use
+raw file bytes, not decoded text. Creation defaults to UTF-8 and SHA-512;
+`create --encoding NAME` chooses another representable tag encoding and
+`--all` explicitly includes both legacy algorithms in addition to SHA-256/SHA-512.
+
+URI grammar validation covers scheme, all hier-part/path forms, userinfo,
+reg-name, IPv4/IPv6/IPvFuture literals, decimal port, query and percent escapes.
+The RFC 3986 `absolute-URI` production used by fetch.txt excludes fragments.
+Scheme-specific semantics and authorization belong to transport, not syntax.
+Payload paths use BagIt's separate percent-encoding rules.
+
+```powershell
+node bin/moonbagit.mjs fetch incoming-bag received-bag --allow-origin https://data.example.org --max-bytes 1073741824 --timeout-ms 30000 --profile examples/research-profile.json
+```
+
+Only missing payload explicitly listed in a structurally checked fetch plan is
+retrieved. All requested HTTP(S) origins must be explicitly authorized before
+any staging or request. Redirects, credentials in URLs, non-200/partial responses
+and compressed HTTP bodies are refused. Defaults are a 1 GiB total byte budget
+and 30 seconds per file; both can be configured. The receiver checks actual
+streamed sizes, every payload/tag digest and the optional profile before
+publishing a new directory. Failed staging is retained, never published. Existing
+corrupt payload is not silently replaced. URNs and other syntactically valid
+schemes remain valid fetch entries but require a separately authorized transport
+adapter; validation never runs them. Trusting an origin includes its DNS and
+network endpoint; this is not an SSRF-resistant arbitrary-URL proxy.
+
+Case-only collisions produce warnings. POSIX-specific names remain usable on
+POSIX filesystems; host OS restrictions are not additional BagIt format rules.
+Unicode normalization is not silently applied where it could merge names.
 Manifest writing rejects root-relative tag paths starting with a space or TAB:
 the reader cannot distinguish them from the separator without losing characters.
 Whitespace inside paths (for example `data/ notes.txt`) is preserved. A manifest
-writer call must use one digest length consistently, not mix SHA-256 and SHA-512.
+writer call must use one digest length consistently, not mix algorithms.
 
 The CLI supports 100,000 files and 100,000 directories, 16 MiB per standard text
 tag and 64 MiB total standard text. Payload hashing is streaming. File sizes
@@ -203,6 +232,10 @@ python scripts/benchmark.py --files 10000 --bytes 1024
 python scripts/consumer.py
 ```
 
+`scripts/rfc8493.py --bagit-path .interop/upstream` exercises declared encodings,
+legacy algorithms, no-optional-tag bags and real local HTTP receipt failures.
+Set up the pinned native producer as described in the bidirectional guide first.
+
 The independent [Library of Congress bagit-python](https://github.com/LibraryOfCongress/bagit-python)
 tool validates generated bags, and MoonBagIt validates bags generated by it.
 The released tool creates BagIt 0.97, so the reverse test upgrades the declaration
@@ -222,7 +255,7 @@ also runs the suite. See [support details](docs/CONFORMANCE.md).
 
 The public repository contains the implementation, CI workflow, executable
 examples and independently reproducible tests. The current delivered scope is
-the documented BagIt subset and local receiving/upgrade workflows, not a backup,
+BagIt 1.0 format processing and explicitly authorized receiving/upgrade workflows, not a backup,
 evidence-ledger or network-transfer service. [Verification details](docs/VERIFICATION.md)
 separate observed checks from future work. Competition acceptance is decided
 by the organizers, not by test count or a configured workflow.

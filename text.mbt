@@ -36,10 +36,22 @@ pub fn parse_declaration(text : String) -> Declaration raise FormatError {
     raise Invalid("missing or misplaced character encoding declaration")
   }
   let encoding = rows[1][29:].to_owned()
-  guard encoding[:].to_upper().to_owned() == "UTF-8" else {
-    raise Invalid("only UTF-8 tag files are supported")
+  guard encoding != "" &&
+    encoding
+    .iter()
+    .all(c => {
+      uri_alphanumeric(c) || c == '-' || c == '_' || c == '.' || c == ':'
+    }) else {
+    raise Invalid("invalid character encoding name")
   }
-  { version: "1.0", encoding: "UTF-8", }
+  {
+    version: "1.0",
+    encoding: if encoding[:].to_upper().to_owned() == "UTF-8" {
+      "UTF-8"
+    } else {
+      encoding
+    },
+  }
 }
 
 ///|
@@ -83,13 +95,16 @@ pub fn decode_path(path : String) -> String raise FormatError {
 }
 
 ///|
-/// Conservative portable paths also rule out drive letters and UNC separators.
+/// Format paths are POSIX-relative; portability is a separate advisory check.
 pub fn check_path(path : String) -> Unit raise FormatError {
   guard path != "" && !path.has_prefix("/") else {
     raise Invalid("path must be relative")
   }
-  guard !path.contains("\\") && !path.contains(":") && !path.contains("\u0000") else {
-    raise Invalid("unsafe or nonportable path")
+  guard !path.contains("\u0000") &&
+    !(path.length() >= 2 &&
+    path[1] == ':' &&
+    ((path[0] >= 'a' && path[0] <= 'z') || (path[0] >= 'A' && path[0] <= 'Z'))) else {
+    raise Invalid("NUL and drive-qualified paths are unsafe")
   }
   for part in path.split("/") {
     guard part != "" && part != "." && part != ".." else {
@@ -168,9 +183,11 @@ pub fn render_manifest(entries : Array[Entry]) -> String raise FormatError {
         "leading path whitespace is ambiguous with manifest separators",
       )
     }
-    guard (entry.checksum.length() == 64 || entry.checksum.length() == 128) &&
+    guard [32, 40, 64, 128].contains(entry.checksum.length()) &&
       entry.checksum.iter().all(c => c.is_ascii_hexdigit()) else {
-      raise Invalid("manifest writer requires a SHA-256 or SHA-512 hex digest")
+      raise Invalid(
+        "manifest writer requires an MD5, SHA-1, SHA-256 or SHA-512 hex digest",
+      )
     }
     guard digest_length == 0 || digest_length == entry.checksum.length() else {
       raise Invalid("one manifest cannot mix checksum algorithms")
@@ -190,19 +207,18 @@ fn metadata_label(label : String) -> Unit raise FormatError {
   guard label != "" &&
     !label.contains(":") &&
     label.trim(chars=" \t").to_owned() == label &&
-    label.iter().all(c => c == '\t' || (c >= '\u0020' && c != '\u007F')) else {
+    !label.contains("\r") &&
+    !label.contains("\n") else {
     raise Invalid(
-      "metadata label must not contain boundary whitespace, a colon or control characters",
+      "metadata label must not contain boundary whitespace, a colon or line endings",
     )
   }
 }
 
 ///|
 fn metadata_value(value : String) -> Unit raise FormatError {
-  guard value
-    .iter()
-    .all(c => c == '\t' || c == '\n' || (c >= '\u0020' && c != '\u007F')) else {
-    raise Invalid("metadata value contains a control character")
+  guard !value.contains("\r") else {
+    raise Invalid("use LF for metadata continuation values")
   }
 }
 
@@ -268,47 +284,6 @@ fn take_token(row : String, start : Int32) -> (String, Int32) {
     i = i + 1
   }
   (token, i)
-}
-
-///|
-fn check_fetch_url(url : String) -> Unit raise FormatError {
-  guard url.find(":") is Some(colon) && colon > 0 else {
-    raise Invalid("fetch URL must be an absolute URI")
-  }
-  let scheme = url[:colon].to_owned()
-  let first = scheme[0]
-  guard ((first >= 'a' && first <= 'z') || (first >= 'A' && first <= 'Z')) &&
-    scheme
-    .iter()
-    .all(c => {
-      (c >= 'a' && c <= 'z') ||
-      (c >= 'A' && c <= 'Z') ||
-      (c >= '0' && c <= '9') ||
-      c == '+' ||
-      c == '-' ||
-      c == '.'
-    }) else {
-    raise Invalid("invalid URI scheme")
-  }
-  let mut i = colon + 1
-  while i < url.length() {
-    let c = url[i]
-    if c == '%' {
-      guard i + 2 < url.length() &&
-        url[i + 1:i + 3].to_owned().iter().all(c => c.is_ascii_hexdigit()) else {
-        raise Invalid("invalid percent escape in fetch URI")
-      }
-      i = i + 3
-    } else {
-      guard (c >= 'a' && c <= 'z') ||
-        (c >= 'A' && c <= 'Z') ||
-        (c >= '0' && c <= '9') ||
-        "-._~:/?#[]@!$&'()*+,;=".contains(url[i:i + 1].to_owned()) else {
-        raise Invalid("fetch URI contains a non-URI character")
-      }
-      i = i + 1
-    }
-  }
 }
 
 ///|

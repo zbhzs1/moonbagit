@@ -11,6 +11,9 @@ Python tool. No adjacent MoonBit archive or evidence project's source is include
 | LibraryOfCongress/bagit-python, https://github.com/LibraryOfCongress/bagit-python | Independent CLI test oracle | CC0 1.0; test-only, not in published library |
 | LibraryOfCongress/bagit-conformance-suite, https://github.com/LibraryOfCongress/bagit-conformance-suite | Unmodified external valid/invalid fixtures | US government public domain plus CC0 worldwide; CI checkout outside this source tree |
 | Node.js node:crypto / node:fs | Maintained runtime hashing and filesystem adapter | Node.js runtime dependency, not vendored |
+| Node.js node:http / node:https | Explicitly authorized streaming transport with standard TLS verification | Node.js runtime, not vendored |
+| iconv-lite 0.7.0, https://github.com/ashtuchkin/iconv-lite | Declared tag-encoding conversion in the host, not custom codecs | MIT; pinned npm dependency, lockfile integrity; license in node_modules/iconv-lite/LICENSE |
+| safer-buffer 2.1.2, https://github.com/ChALkeR/safer-buffer | Transitive iconv-lite buffer helper | MIT; pinned in package-lock.json, license in node_modules/safer-buffer/LICENSE |
 | MoonBit core | Standard JSON/string/debug APIs | Toolchain standard library, not vendored |
 
 Pinning, known upstream limitations and fixture counts are documented in

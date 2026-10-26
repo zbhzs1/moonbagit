@@ -2,7 +2,7 @@
 test "offline fetch writer preserves URI escapes and encodes only the path" {
   let entries : Array[FetchEntry] = [
     {
-      url: "https://example.org/a%20b?x=1&y=2#part",
+      url: "https://example.org/a%20b?x=1&y=2",
       size: Some(3L),
       path: "data/a b%.txt",
     },
@@ -13,7 +13,7 @@ test "offline fetch writer preserves URI escapes and encodes only the path" {
     },
   ]
   let text = render_fetch(entries)
-  assert_true(text.contains("a%20b?x=1&y=2#part 3 data/a b%25.txt"))
+  assert_true(text.contains("a%20b?x=1&y=2 3 data/a b%25.txt"))
   assert_true(text.contains("%0Afile"))
   assert_eq(parse_fetch(text), entries)
 }

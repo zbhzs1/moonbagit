@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import iconv from 'iconv-lite';
 
 const MAX_FILES = 100000;
 const MAX_DIRECTORIES = 100000;
@@ -62,6 +63,44 @@ function sameFile(a, b) {
     a.mtimeMs === b.mtimeMs && a.ctimeMs === b.ctimeMs;
 }
 
+export function decodeTag(bytes, encoding) {
+  const normalized = encoding.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (!iconv.encodingExists(encoding)) throw new Error(`unsupported host character encoding: ${encoding}`);
+  if (normalized === 'utf8') return decoder.decode(bytes);
+  if (['ascii', 'usascii', 'ansix341968', 'iso646us'].includes(normalized) && bytes.some(value => value > 127)) {
+    throw new Error('invalid US-ASCII tag bytes');
+  }
+  if (normalized === 'utf16' && !(bytes[0] === 0xff && bytes[1] === 0xfe) &&
+      !(bytes[0] === 0xfe && bytes[1] === 0xff)) throw new Error('UTF-16 requires a byte order mark');
+  // ICU rejects malformed sequences where available; iconv provides IANA legacy encodings.
+  // Round-trip validation below also protects codecs not implemented by ICU.
+  let decoded;
+  try {
+    decoded = new TextDecoder(encoding, { fatal: true, ignoreBOM: false }).decode(bytes);
+  } catch (error) {
+    if (!(error instanceof RangeError)) throw error;
+  }
+  const result = iconv.decode(bytes, encoding);
+  const encoded = iconv.encode(result, encoding);
+  if (!encoded.equals(bytes) && !['utf16le', 'utf16be', 'utf16'].includes(normalized)) {
+    // Some legacy encodings have multiple byte representations. ICU's strict
+    // decoder is authoritative for those; never silently accept a replacement.
+    if (decoded === undefined || result.includes('\uFFFD')) throw new Error(`invalid ${encoding} tag bytes`);
+  }
+  if (['utf16le', 'utf16be', 'utf16'].includes(normalized)) {
+    if (bytes.length % 2) throw new Error('invalid UTF-16 tag bytes');
+  }
+  return result;
+}
+
+function tagEncoding(root) {
+  const declaration = path.join(root, 'bagit.txt');
+  if (!fs.lstatSync(declaration, { throwIfNoEntry: false })?.isFile()) return 'UTF-8';
+  const record = hashFile(declaration, 'UTF-8');
+  const match = /^Tag-File-Character-Encoding: ([A-Za-z0-9_.:-]+)$/m.exec(record.text.replaceAll('\r\n', '\n').replaceAll('\r', '\n'));
+  return match?.[1] ?? 'UTF-8';
+}
+
 function hashFile(absolute, text) {
   const before = fs.lstatSync(absolute);
   if (!before.isFile() || before.isSymbolicLink()) throw new Error('not a regular file');
@@ -70,8 +109,7 @@ function hashFile(absolute, text) {
   const fd = fs.openSync(absolute, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0));
   try {
     if (!sameFile(before, fs.fstatSync(fd))) throw new Error('file changed before reading');
-    const sha256 = crypto.createHash('sha256');
-    const sha512 = crypto.createHash('sha512');
+    const hashes = Object.fromEntries(['md5', 'sha1', 'sha256', 'sha512'].map(name => [name, crypto.createHash(name)]));
     const buffer = Buffer.allocUnsafe(Math.min(1024 * 1024, Math.max(1, before.size)));
     const chunks = [];
     let size = 0;
@@ -81,8 +119,7 @@ function hashFile(absolute, text) {
       const bytes = buffer.subarray(0, count);
       size += count;
       if (text && size > MAX_TEXT_BYTES) throw new Error('tag text grew past size limit');
-      sha256.update(bytes);
-      sha512.update(bytes);
+      for (const hash of Object.values(hashes)) hash.update(bytes);
       if (text) chunks.push(Buffer.from(bytes));
     }
     if (size !== before.size || !sameFile(before, fs.fstatSync(fd)) || !sameFile(before, fs.lstatSync(absolute))) {
@@ -90,8 +127,8 @@ function hashFile(absolute, text) {
     }
     return {
       size,
-      digests: { sha256: sha256.digest('hex'), sha512: sha512.digest('hex') },
-      text: text ? decoder.decode(Buffer.concat(chunks)) : undefined,
+      digests: Object.fromEntries(Object.entries(hashes).map(([name, hash]) => [name, hash.digest('hex')])),
+      text: text ? decodeTag(Buffer.concat(chunks), text === true ? 'UTF-8' : text) : undefined,
     };
   } finally {
     fs.closeSync(fd);
@@ -106,11 +143,13 @@ function isTextTag(relative) {
 function scan(value) {
   const root = directory(value);
   const tree = walk(root);
+  const encoding = tagEncoding(root);
   const files = [];
   const texts = {};
   let textBytes = 0;
   for (const entry of tree.files) {
-    const record = hashFile(entry.absolute, isTextTag(entry.relative));
+    const text = isTextTag(entry.relative);
+    const record = hashFile(entry.absolute, text ? (entry.relative === 'bagit.txt' ? 'UTF-8' : encoding) : false);
     files.push({ path: entry.relative, size: String(record.size), digests: record.digests });
     if (record.text !== undefined) {
       textBytes += record.size;
@@ -121,7 +160,7 @@ function scan(value) {
   return { files, directories: tree.directories, texts };
 }
 
-function prepare({ source, output }, wholeBag = false) {
+export function prepare({ source, output }, wholeBag = false) {
   const root = directory(source);
   const destination = path.resolve(output);
   if (pathEntryExists(destination)) throw new Error('output must not already exist');
@@ -150,21 +189,26 @@ function prepare({ source, output }, wholeBag = false) {
 function writeTags({ root, tags, replace = false }) {
   const absolute = directory(root);
   if (!stages.has(absolute)) throw new Error('writes are restricted to this process staging directory');
+  const declaration = tags['bagit.txt'];
+  const selectedEncoding = declaration?.match(/^Tag-File-Character-Encoding: ([A-Za-z0-9_.:-]+)$/m)?.[1] ?? tagEncoding(absolute);
   for (const [name, text] of Object.entries(tags)) {
-    if (!/^(bagit|bag-info|(?:tag)?manifest-(sha256|sha512))\.txt$/.test(name) || typeof text !== 'string') {
+    if (!/^(bagit|bag-info|(?:tag)?manifest-(md5|sha1|sha256|sha512))\.txt$/.test(name) || typeof text !== 'string') {
       throw new Error('unexpected generated tag filename');
     }
-    if (replace && !/^tagmanifest-(sha256|sha512)\.txt$/.test(name)) {
+    if (replace && !/^tagmanifest-(md5|sha1|sha256|sha512)\.txt$/.test(name)) {
       throw new Error('only staging tag manifests may be replaced');
     }
     const target = path.join(absolute, name);
     if (replace && fs.existsSync(target) && !fs.lstatSync(target).isFile()) throw new Error('tag is not a regular file');
-    fs.writeFileSync(target, text, { encoding: 'utf8', flag: replace ? 'w' : 'wx' });
+    const encoding = name === 'bagit.txt' ? 'UTF-8' : selectedEncoding;
+    const bytes = iconv.encode(text, encoding);
+    if (decodeTag(bytes, encoding) !== text) throw new Error(`generated text is not representable in ${encoding}`);
+    fs.writeFileSync(target, bytes, { flag: replace ? 'w' : 'wx' });
   }
   return null;
 }
 
-function commit({ root, output }) {
+export function commit({ root, output }) {
   const stage = directory(root);
   const target = path.resolve(output);
   const resolved = path.join(directory(path.dirname(target)), path.basename(target));
@@ -184,6 +228,11 @@ export function installHost(args = process.argv.slice(2)) {
         let result;
         switch (op) {
           case 'args': result = args; break;
+          case 'codec': {
+            if (typeof value.encoding !== 'string' || !iconv.encodingExists(value.encoding)) throw new Error('unsupported host character encoding');
+            result = value.encoding;
+            break;
+          }
           case 'scan': result = scan(value.root); break;
           case 'prepare': result = prepare(value); break;
           case 'prepare_upgrade': result = prepare(value, true); break;

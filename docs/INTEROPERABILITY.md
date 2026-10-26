@@ -4,8 +4,9 @@ This is an executable acceptance check, not a claim of complete BagIt compatibil
 The independently maintained implementation is
 [LibraryOfCongress/bagit-python](https://github.com/LibraryOfCongress/bagit-python),
 CC0. No validation or manifest-generation code in that dependency is patched.
-MoonBagIt library/CLI remains the published 0.2.1 implementation; this addition
-improves verification and review evidence rather than changing the wire format.
+This matrix was introduced for 0.2.1 and is retained for 0.3.0. The latter also
+adds the required-behavior/authorized-receipt suite documented in
+[RFC8493-AUDIT.md](RFC8493-AUDIT.md).
 
 ## Two directions and their assertions
 
@@ -51,6 +52,7 @@ Run from this checkout after `moon build --target js`. Each output path must be
 new; the runner will not overwrite an earlier evidence directory.
 
 ```powershell
+npm ci --ignore-scripts
 python -m pip install bagit==1.9.0
 python scripts/interop_report.py --source-id PyPI:bagit==1.9.0 --output interop-evidence/released
 git -c core.autocrlf=false clone https://github.com/LibraryOfCongress/bagit-python.git .interop/bagit-python
@@ -87,4 +89,4 @@ The positive matrix excludes literal-percent and CR/LF filenames. The existing
 decode `%25`; its rejection of MoonBagIt's normative percent encoding is a known
 limitation, **not a successful interoperability case**. No claim is made about
 all BagIt versions, all algorithms, remote fetch execution or full RFC coverage.
-See [CONFORMANCE.md](CONFORMANCE.md) for the complete supported subset.
+See [CONFORMANCE.md](CONFORMANCE.md) and the requirement audit for current behavior.

@@ -31,12 +31,14 @@ fn create(args : Array[String]) -> Json raise {
   let mut algorithms = [@bag.Sha512]
   let mut metadata : Array[@bag.Metadata] = []
   let mut metadata_selected = false
+  let mut encoding = "UTF-8"
+  let mut encoding_selected = false
   let mut profile : @bag.Profile? = None
   let mut selected = false
   let mut i = 3
   while i < args.length() {
     match args[i] {
-      "--sha256" | "--sha512" | "--both" => {
+      "--md5" | "--sha1" | "--sha256" | "--sha512" | "--both" | "--all" => {
         guard !selected else {
           raise @bag.Invalid("choose exactly one algorithm option")
         }
@@ -44,8 +46,20 @@ fn create(args : Array[String]) -> Json raise {
         algorithms = match args[i] {
           "--sha256" => [@bag.Sha256]
           "--sha512" => [@bag.Sha512]
+          "--md5" => [@bag.Md5]
+          "--sha1" => [@bag.Sha1]
+          "--all" => [@bag.Md5, @bag.Sha1, @bag.Sha256, @bag.Sha512]
           _ => [@bag.Sha256, @bag.Sha512]
         }
+      }
+      "--encoding" => {
+        guard !encoding_selected && i + 1 < args.length() else {
+          raise @bag.Invalid("encoding requires exactly one name")
+        }
+        encoding_selected = true
+        i = i + 1
+        encoding = args[i]
+        ignore(host("codec", { "encoding": encoding }))
       }
       "--metadata" => {
         guard !metadata_selected && i + 1 < args.length() else {
@@ -69,13 +83,13 @@ fn create(args : Array[String]) -> Json raise {
     i = i + 1
   }
   // Reject invalid metadata before copying any payload into staging.
-  ignore(@bag.create_tags([], metadata~, algorithms~))
+  ignore(@bag.create_tags([], metadata~, algorithms~, encoding~))
   let stage : String = @json.from_json(
     host("prepare", { "source": source, "output": output }),
   )
   let inventory = scan(stage)
   let payload = inventory.files.filter(f => f.path.has_prefix("data/"))
-  let initial = @bag.create_tags(payload, metadata~, algorithms~)
+  let initial = @bag.create_tags(payload, metadata~, algorithms~, encoding~)
   ignore(host("write_tags", { "root": stage, "tags": Json(initial) }))
   let inventory = scan(stage)
   let tags = inventory.files.filter(f => !f.path.has_prefix("data/"))
@@ -160,6 +174,12 @@ fn run(args : Array[String]) -> Json raise {
     raise @bag.Invalid("expected create or validate; use --help")
   }
   match args[0] {
+    "fetch-plan" => {
+      guard args.length() == 2 else {
+        raise @bag.Invalid("fetch-plan requires BAG")
+      }
+      { "entries": Json(@bag.plan_fetch(scan(args[1]))) }
+    }
     "create" => create(args)
     "upgrade" => upgrade(args)
     "lint" => {
@@ -198,12 +218,17 @@ fn main {
   try {
     let args : Array[String] = @json.from_json(host("args", Json::null()))
     if args.is_empty() || args[0] == "--help" {
-      println("MoonBagIt - BagIt 1.0 UTF-8 / SHA-256 / SHA-512")
       println(
-        "node bin/moonbagit.mjs create SOURCE OUTPUT [--sha256|--sha512|--both] [--metadata FILE.json] [--profile FILE.json]",
+        "MoonBagIt - BagIt 1.0 creation, validation and authorized receipt",
+      )
+      println(
+        "node bin/moonbagit.mjs create SOURCE OUTPUT [--sha256|--sha512|--both|--md5|--sha1|--all] [--encoding NAME] [--metadata FILE.json] [--profile FILE.json]",
       )
       println("node bin/moonbagit.mjs validate BAG [--profile FILE.json]")
       println("node bin/moonbagit.mjs lint BAG")
+      println(
+        "node bin/moonbagit.mjs fetch SOURCE OUTPUT --allow-origin ORIGIN [--max-bytes N] [--timeout-ms N] [--profile FILE.json]",
+      )
       println(
         "node bin/moonbagit.mjs upgrade SOURCE OUTPUT --sha256|--sha512|--both",
       )

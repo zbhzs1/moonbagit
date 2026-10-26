@@ -1,8 +1,10 @@
 # Local receiving profiles
 
 Reference: [BagIt Profiles 1.4.0](https://bagit-profiles.github.io/bagit-profiles-specification/), CC0.
-This is a strict directory-oriented subset. It does not download identifiers,
-complete remote bags, accept archive files, or support older profile versions.
+This is a directory-oriented BagIt Profiles 1.4.0 implementation. It does not
+download profile identifiers, accept archive files or support older profile versions.
+The separate explicit `fetch` receiver can complete remote payload and applies
+the local profile before publishing; validation itself never fetches resources.
 Profile parsing validates types and internal required/allowed contradictions;
 all unknown keys fail closed so that a receiving constraint cannot disappear.
 

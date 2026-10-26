@@ -63,6 +63,7 @@ pub fn create_tags(
   payload : Array[FileRecord],
   metadata~ : Array[Metadata] = [],
   algorithms~ : Array[Algorithm] = [Sha512],
+  encoding~ : String = "UTF-8",
 ) -> Map[String, String] raise FormatError {
   checked_algorithms(algorithms)
   for file in payload {
@@ -71,7 +72,11 @@ pub fn create_tags(
     }
   }
   let tags : Map[String, String] = Map([])
-  tags["bagit.txt"] = "BagIt-Version: 1.0\nTag-File-Character-Encoding: UTF-8\n"
+  let declaration = "BagIt-Version: 1.0\nTag-File-Character-Encoding: " +
+    encoding +
+    "\n"
+  ignore(parse_declaration(declaration))
+  tags["bagit.txt"] = declaration
   let fields = metadata.copy()
   guard !fields.any(f => f.label[:].to_lower().to_owned() == "payload-oxum") else {
     raise Invalid("Payload-Oxum is computed, not supplied by the caller")

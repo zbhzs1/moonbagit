@@ -47,6 +47,9 @@ pub extend FetchEntry with Eq::{equal, not_equal}
 pub extend FetchEntry with @debug.Debug::{to_repr}
 
 ///|
+pub extend FetchEntry with ToJson::{to_json}
+
+///|
 pub extend FileRecord with @debug.Debug::{to_repr}
 
 ///|

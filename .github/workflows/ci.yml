@@ -33,6 +33,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: moon version --all
+      - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: moon fmt --check
       - run: moon check --target js --deny-warn
       - run: moon test --target js
@@ -55,6 +56,8 @@ jobs:
           SETUPTOOLS_SCM_PRETEND_VERSION: 0.0.0
       - name: Record native 1.0 bidirectional evidence without declaration rewriting
         run: python scripts/interop_report.py --bagit-path .interop/upstream --source-id LibraryOfCongress/bagit-python@4bd2713cedbe1f8e634567c20ef0dded9622011d --require-native-1 --output interop-evidence/native-1.0
+      - name: BagIt required behavior and authorized end-to-end receipt
+        run: python scripts/rfc8493.py --bagit-path .interop/upstream
       - name: Upload reports and actual generated bags for independent review
         if: always()
         uses: actions/upload-artifact@v4

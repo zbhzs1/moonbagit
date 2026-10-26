@@ -5,6 +5,8 @@ pub(all) suberror FormatError {
 
 ///|
 pub(all) enum Algorithm {
+  Md5
+  Sha1
   Sha256
   Sha512
 } derive(Eq, @debug.Debug)
@@ -12,6 +14,8 @@ pub(all) enum Algorithm {
 ///|
 pub fn Algorithm::name(self : Algorithm) -> String {
   match self {
+    Md5 => "md5"
+    Sha1 => "sha1"
     Sha256 => "sha256"
     Sha512 => "sha512"
   }
@@ -20,6 +24,8 @@ pub fn Algorithm::name(self : Algorithm) -> String {
 ///|
 pub fn Algorithm::hex_length(self : Algorithm) -> Int32 {
   match self {
+    Md5 => 32
+    Sha1 => 40
     Sha256 => 64
     Sha512 => 128
   }
@@ -28,6 +34,8 @@ pub fn Algorithm::hex_length(self : Algorithm) -> Int32 {
 ///|
 pub fn algorithm(name : String) -> Algorithm raise FormatError {
   match name {
+    "md5" => Md5
+    "sha1" => Sha1
     "sha256" => Sha256
     "sha512" => Sha512
     _ => raise Invalid("unsupported algorithm: " + name)
@@ -65,7 +73,7 @@ pub(all) struct FetchEntry {
   url : String
   size : Int64?
   path : String
-} derive(Eq, @debug.Debug)
+} derive(Eq, @debug.Debug, ToJson)
 
 ///|
 /// The host supplies hashes of raw file bytes, not hashes of decoded text.

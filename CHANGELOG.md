@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.3.0 - 2026-10-26
+
+- Deliver the RFC 8493 mandatory-behavior endpoint and a clause-to-code/test
+  audit rather than deferring grammar required by the supported fetch format.
+- Validate RFC 3986 absolute-URI components, including IPv6, embedded IPv4,
+  IPvFuture, authority and query; reject fragments and malformed ports/escapes.
+- Add MoonBit fetch preflight and explicit bounded HTTP(S) receipt into private
+  staging, with origin authorization, no redirects, raw streamed bytes, and
+  complete digest/profile verification before publishing a new directory.
+- Decode tags according to their declared encoding; retain UTF-8/no-BOM for the
+  declaration; create with `--encoding`, preserve encoding during digest upgrade,
+  and refuse malformed/unrepresentable bytes instead of silently replacing them.
+- Add MD5/SHA-1 legacy interoperability and warnings, retain SHA-512 default;
+  `--all` explicitly creates all four supported algorithms.
+- Stop confusing POSIX filename portability and non-linebreaking metadata
+  characters with mandatory format restrictions. Preserve traversal defenses.
+- Add the RFC/receipt regression suite, keep the existing bidirectional
+  bagit-python matrix and external fixtures; run new tests on both CI platforms.
+- Add pinned MIT iconv-lite/safer-buffer host dependencies and documented
+  `npm ci` installation. Pure MoonBit library consumers do not need Node codecs.
+
+API additions include `Md5`, `Sha1`, `check_fetch_url`, `plan_fetch` and optional
+`create_tags(..., encoding=...)`. Callers with exhaustive Algorithm matches must
+handle the two additional cases. Format support is not an authenticity claim,
+unbounded resource promise or implementation of every URI transport.
+
 ## 0.2.1 - 2026-10-19
 
 - Reject manifest writer inputs that mix digest lengths or have ambiguous

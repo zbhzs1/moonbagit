@@ -6,3 +6,4 @@ target/
 interop-evidence/
 .moonbagit-*/
 __pycache__/
+node_modules/

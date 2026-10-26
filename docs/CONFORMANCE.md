@@ -1,22 +1,25 @@
 # Support and verification matrix
 
-RFC 8493 is an informational RFC defining BagIt 1.0. MoonBagIt implements a
-documented UTF-8 / SHA-256 / SHA-512 subset. Unsupported bags are not reported
-as valid; that result alone does not prove the bag violates the RFC.
+RFC 8493 is an informational RFC defining BagIt 1.0. The 0.3.0 endpoint is its
+mandatory directory-format creation/validation behavior, with optional elements
+validated when present. See [RFC8493-AUDIT.md](RFC8493-AUDIT.md) for individual
+requirements, implementation and executable evidence. Operational limits are
+not additional format rules. Unsupported host codecs or future algorithms are
+never silently treated as verified or declared RFC violations.
 
 | RFC section | Implemented checks | Remaining work |
 | --- | --- | --- |
-| 2.1.1 | Two ordered declaration lines, version 1.0, UTF-8, reject BOM | Other registered encodings and legacy versions |
+| 2.1.1 | Two ordered declaration lines, version 1.0, UTF-8 declaration without BOM; declared encoding for other tags | Legacy BagIt versions are not the 1.0 target; codec availability depends on pinned host |
 | 2.1.2 | Required data directory, nested opaque payload | Host adapters beyond Node.js |
-| 2.1.3 | One or more payload manifests, hex lengths/case, separator, every file exactly once, escaped filenames | Other algorithms and optional legacy checksum-tool quirks |
+| 2.1.3 | One or more payload manifests, hex lengths/case, separator, every file exactly once, escaped filenames | Future optional algorithms and checksum-tool quirks outside strict format |
 | 2.2.1 | Forbid payload/tagmanifest entries; include every payload manifest; verify raw-byte digests; warn on different optional tag sets | Wider compatibility fixtures |
 | 2.2.2 | Metadata order/repetitions, continuation syntax; Payload-Oxum uniqueness, numeric syntax, counts; local receiving profiles | Wider receiving agreements |
-| 2.2.3 | Parse/write offline plans; absolute scheme, URI characters/escapes, nonnegative or unknown length, safe payload path, per-manifest membership, local size | Full URI grammar and separately authorized remote fetching |
+| 2.2.3 | Parse/write fetch; full RFC3986 absolute-URI grammar, size/coverage/path checks; explicitly authorized bounded HTTP(S) receipt with final integrity/profile gate | Additional optional transports are separate adapters, never executed by validation |
 | 2.2.4 | Arbitrary tag files checked if listed; content ignored | None within current host restrictions |
-| 2.3 | LF, CR, CRLF; UTF-8 text without BOM | Other encodings |
-| 2.4 | SHA-256/SHA-512; default SHA-512 creation; non-destructive manifest upgrade | Legacy algorithms |
+| 2.3 | LF, CR, CRLF; UTF-8/no BOM, declared IANA encoding via maintained codecs, required UTF-16 BOM; raw-byte hashing | Unavailable host codecs report unsupported rather than substitute characters |
+| 2.4 | Required SHA-256/SHA-512; default SHA-512; MD5/SHA-1 compatibility and warnings; encoding-preserving manifest upgrade | Future optional registry algorithms |
 | 3 | Separate completeness from hash validity; verify all checksums even if Oxum matches | Unsupported formats require another validator |
-| 5 | Path containment, reject traversal/links/special files; no remote requests | Hostile concurrent mutation, sandboxing, signatures |
+| 5 | Path containment, reject traversal/links/special files; authorized origins, no redirect/credential/partial response, size/time limits, final digest/profile check | Hostile concurrent mutation, sandboxing, signatures are separate security guarantees |
 | 6 | Deterministic manifests; case/file/directory collisions, Windows device-name, character and length lint | Unicode normalization matching |
 
 The library's `FileRecord` contract is trusted input from its host. A caller
@@ -26,7 +29,9 @@ Directory relationships and text-to-file membership are checked, but cannot
 authenticate fabricated hashes or prove that supplied text matches actual bytes.
 The writer also refuses leading-space/TAB root-relative paths and mixed digest
 lengths rather than producing an ambiguous or inconsistent manifest. These are
-documented input-policy restrictions, not additional RFC requirements.
+writer representability checks, not assertions that the bag format prohibits
+all such existing filenames. POSIX colons/backslashes are no longer rejected
+as nonportable format syntax; Windows host restrictions remain explicit.
 
 ## Independent verification
 

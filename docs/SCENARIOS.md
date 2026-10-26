@@ -3,11 +3,14 @@
 Build first with MoonBit 0.1.20261012 or later and Node.js 22 or later:
 
 ```powershell
+npm ci --ignore-scripts
 moon build --target js
 ```
 
 Run from the repository root. Every named output below must be absent before
-creation; choose fresh paths when repeating. No command downloads payloads.
+creation; choose fresh paths when repeating. The three original workflows below
+do not download payloads. The explicit authorized receipt workflow is documented
+in RFC8493-AUDIT.md and exercised with a real HTTP server by scripts/rfc8493.py.
 
 ## Research dataset delivery
 

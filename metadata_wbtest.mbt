@@ -1,14 +1,10 @@
 ///|
-test "metadata parser and writer reject terminal and NUL controls" {
+test "metadata retains non linebreaking characters without treating host policy as RFC syntax" {
   for control in ["\u0000", "\u001B", "\u007F", "\u000B"] {
-    rejects(() => ignore(parse_metadata("Name: a" + control + "b\n")))
-    rejects(() => ignore(parse_metadata("Na" + control + "me: value\n")))
-    rejects(() => {
-      ignore(render_metadata([{ label: "Name", value: "a" + control, }]))
-    })
-    rejects(() => {
-      ignore(render_metadata([{ label: "Na" + control + "me", value: "a", }]))
-    })
+    let fields : Array[Metadata] = [
+      { label: "Na" + control + "me", value: "a" + control, },
+    ]
+    assert_eq(parse_metadata(render_metadata(fields)), fields)
   }
 }
 
@@ -46,12 +42,7 @@ test "metadata allows internal linear whitespace in labels" {
 }
 
 ///|
-test "creation refuses unsafe metadata before producing tag text" {
-  rejects(() => {
-    ignore(
-      create_tags([], metadata=[{ label: "Contact-Name", value: "\u001B[31m", }]),
-    )
-  })
+test "creation refuses lossy metadata continuation values" {
   rejects(() => {
     ignore(
       create_tags([], metadata=[

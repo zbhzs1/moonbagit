@@ -31,8 +31,10 @@ creation (`create.mbt`), receiving rules (`profiles.mbt`), upgrade planning
 CLI orchestration is also MoonBit (`cmd/main/main.mbt`). The pure API runs on
 JS and WASM-GC; real-directory CLI I/O currently requires Node.js.
 
-The Node adapter (`bin/host.mjs`) performs file traversal, bounded UTF-8 reads,
-streaming standard-library SHA-256/SHA-512 and staged filesystem publication.
+The Node adapter (`bin/host.mjs`) performs file traversal, declared-charset reads,
+streaming standard-library MD5/SHA-1/SHA-256/SHA-512 and staged filesystem publication.
+The `bin/receive.mjs` adapter implements explicitly authorized HTTP(S) streaming;
+MoonBit `receive.mbt` owns fetch preflight rules and `uri.mbt` owns URI syntax.
 It is not the implementation of BagIt rules. The core checks inventory
 structure, but trusts the caller to supply accurate file bytes and hashes;
 it is not a new cryptographic algorithm or a hostile-filesystem sandbox.
@@ -59,10 +61,11 @@ upstream percent-filename failures are distinguished in CONFORMANCE.md.
 Windows cannot exercise newline filenames or unprivileged symlink creation;
 Linux CI must run those cases rather than counting skips as coverage.
 
-The delivered subset is BagIt 1.0, UTF-8, SHA-256/SHA-512 and local directories.
-General URI grammar, network fetch, legacy formats, other algorithms/encodings
-and serialized-bag extraction remain compatibility work. Do not describe them
-as completed capabilities. Source/output trees must remain quiescent; no crash
+The 0.3.0 delivery endpoint and mandatory-behavior mapping are in
+[RFC8493-AUDIT.md](RFC8493-AUDIT.md). Full absolute-URI grammar, declared-encoding
+handling, MD5/SHA-1 compatibility and authorized HTTP(S) receipt are implemented,
+not left as future promises. Legacy BagIt versions and archive extraction are
+separate from the BagIt 1.0 directory format. Source/output trees must remain quiescent; no crash
 durability, malicious mutation isolation or authenticity guarantee is made.
 
 Realistic next maintenance work is receiving-agreement feedback, more pinned

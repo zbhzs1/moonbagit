@@ -5,6 +5,10 @@ does not promise full RFC conformance, production performance or committee appro
 
 ## Local checks
 
+The following historical 0.2.1 observations are retained, not relabelled as
+0.3.0 results. The current release's requirement/receipt suite and final CI are
+recorded in its release section below and RFC8493-AUDIT.md.
+
 - MoonBit 0.1.20261016 / moonc 0.10.16: strict JS check, JS build and format check;
   the October 12 toolchain also checked and packaged the release successfully.
 - 90 distinct MoonBit unit tests on JS and WASM-GC (not 180 distinct tests).
@@ -118,9 +122,10 @@ change the already published ZIP.
 
 ## Remaining work
 
-Future compatibility work includes legacy versions/algorithms, additional tag
-encodings, URI grammar coverage and Unicode-normalization-aware transport
-checks. Remote fetching and serialized-bag handling need separately reviewed
-transport and extraction adapters. Signatures, lock services, hostile mutation
+0.3.0 implements legacy MD5/SHA-1, declared tag encodings, RFC3986 absolute-URI
+grammar and explicitly authorized HTTP(S) receipt. These are no longer deferred.
+Further optional compatibility includes legacy BagIt versions, additional
+transports, normalization-aware filename reconciliation and serialized-bag
+adapters. Signatures, lock services, hostile mutation
 isolation and crash durability are distinct security concerns, not guarantees
 of the current checksum validator.

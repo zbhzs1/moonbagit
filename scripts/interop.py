@@ -353,7 +353,7 @@ class Interop(unittest.TestCase):
     def test_create_unsafe_metadata_fails_before_staging(self):
         path = self.base / "bad-metadata.json"
         output = self.base / "never-created"
-        for field in [{"label": "Name", "value": "\x1b[31m"},
+        for field in [{"label": "Name:injection", "value": "value"},
                       {"label": "Description", "value": "first\n hidden"},
                       {"label": "Payload-Oxum", "value": "0.0"}]:
             path.write_text(json.dumps([field]), encoding="utf-8")
