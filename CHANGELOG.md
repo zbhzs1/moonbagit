@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.4.0 - 2026-10-26
+
+- Add a stateful decoded-text manifest reader with cross-chunk CRLF handling,
+  caller-selected resource limits, duplicate tracking, finalization and latched
+  line-numbered failures. A separate recovery inspector reports multiple rows
+  without treating partial output as a valid manifest.
+- Add deterministic per-file checksum evidence and diagnostic grouping, keeping
+  the original full validity report authoritative.
+- Add versioned local preservation snapshots, strict JSON parsing, exact Int64
+  wire counts, file/directory/metadata differences and full snapshot revalidation.
+  Missing common hashes are explicitly unverifiable, not inferred equal by size.
+- Add receiving policies for verified algorithms, protected tags, portability,
+  total/per-file/tag/path quotas and overlapping path budgets. Policy rejection
+  stays separate from RFC invalidity and from BagIt Profiles 1.4 validation.
+- Add offline transfer reservations and deterministic bounded batches, expected
+  checksums, pending-path conflict checks and explicit unknown-size accounting.
+  A plan does not authorize origins or enforce actual network byte limits.
+- Add exact-copy and fetch-completion handoff checks preserving existing tags,
+  payload and empty directories. Real HTTP receipt now executes the handoff gate
+  before publication and accepts an optional receiving-policy gate.
+- Add independent per-bag collection decisions and CLI commands for the new APIs.
+- Retain original RFC and bidirectional interoperability tests; add 38 core
+  preservation regressions and 16 real-filesystem CLI cases on both CI platforms.
+
+The preserved 0.3.0 registry evidence below remains historical until the new
+version's own source CI, publication and registry consumer are recorded.
+
 ## 0.3.0 - 2026-10-26
 
 - Deliver the RFC 8493 mandatory-behavior endpoint and a clause-to-code/test

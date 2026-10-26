@@ -35,6 +35,11 @@ as nonportable format syntax; Windows host restrictions remain explicit.
 
 ## Independent verification
 
+Version 0.4.0 adds [preservation/receiving workflows](PRESERVATION.md) without
+changing the mandatory-format endpoint above. Custom snapshots, quotas and
+handoff guarantees are separately named APIs/results, not additional RFC rules.
+Their tests supplement, rather than replace, the independent suites below.
+
 The [bidirectional verification guide](INTEROPERABILITY.md) gives exact producer
 and receiver operations, the released/native-version distinction, the six-case
 positive matrix, eighteen independent negative controls, and downloadable CI

@@ -53,6 +53,29 @@ measurement above is historical, not a claim that it was repeated for 0.2.1.
 
 ## Remote and release evidence
 
+### Version 0.4.0 development verification
+
+The new implementation has 133 distinct core tests (the prior 95 plus 38),
+all passed locally on JS and WASM-GC, along with strict checks, formatting and
+the JS build. The October 12 toolchain also passed strict JS checking.
+The new `scripts/preservation.py` ran 16 real-filesystem scenarios successfully.
+Existing 37 CLI scenarios against the pinned unmodified native Python module
+passed with four local Windows filename/symlink skips. The 17 RFC/real-HTTP cases
+passed with one POSIX-only filename skip, including the new pre-publication
+handoff gate. CI is responsible for privileged symlink cases and Linux cases.
+
+The native module for these local reruns was fetched unchanged from pinned
+`src/bagit/__init__.py`; its Git blob is
+`2b4adcebf0164d3254d01f2532578103b8df9dee`. A local `0.0.0` distribution metadata
+stub supplies importlib's version query, not a change to validation code. Do
+not mistake that local metadata for an upstream release identity. A pip build
+dependency download stalled and was cancelled; no unsuccessful installation
+is claimed as a passed dependency check.
+
+Source CI, immutable release provenance and the 0.4.0 registry consumer will be
+recorded after they complete. Existing 0.3.0 release/consumer evidence below is
+not relabelled as evidence of a newer published version.
+
 ### Version 0.3.0
 
 Published source revision `144b29a75bdea1c245a4908279c0e36775fce541` passed

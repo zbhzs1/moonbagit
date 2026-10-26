@@ -1,0 +1,17 @@
+{
+  "format": "moonbagit-receiving-policy/1",
+  "name": "Example archive receiving desk",
+  "payload_algorithms": ["sha512"],
+  "tag_algorithms": ["sha512"],
+  "require_tag_protection": true,
+  "forbid_legacy": true,
+  "max_payload_files": "100000",
+  "max_payload_bytes": "1073741824",
+  "max_file_bytes": "536870912",
+  "max_tag_bytes": "67108864",
+  "max_path_depth": "32",
+  "max_manifest_entries": "100000",
+  "path_budgets": [
+    { "pattern": "data/*", "max_bytes": "1073741824" }
+  ]
+}

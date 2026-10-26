@@ -9,9 +9,15 @@ import {
 // Values
 pub fn algorithm(String) -> Algorithm raise FormatError
 
+pub fn audit_bag(BagView) -> BagAudit
+
+pub fn capture_snapshot(BagView, label? : String) -> BagSnapshot raise FormatError
+
 pub fn check_fetch_url(String) -> Unit raise FormatError
 
 pub fn check_path(String) -> Unit raise FormatError
+
+pub fn compare_snapshots(BagSnapshot, BagSnapshot) -> SnapshotDelta raise FormatError
 
 pub fn create_tag_manifests(Array[FileRecord], algorithms? : Array[Algorithm]) -> Map[String, String] raise FormatError
 
@@ -21,7 +27,17 @@ pub fn decode_path(String) -> String raise FormatError
 
 pub fn encode_path(String) -> String
 
+pub fn evaluate_collection(Array[CollectionItem], ReceivingPolicy) -> CollectionReport raise FormatError
+
+pub fn evaluate_receiving_policy(BagView, ReceivingPolicy) -> AcceptanceReport raise FormatError
+
+pub fn group_diagnostics(Array[Diagnostic]) -> Array[DiagnosticGroup]
+
+pub fn inspect_manifest(String, String) -> ManifestInspection
+
 pub fn lint_portability(BagView) -> Array[Diagnostic]
+
+pub fn manifest_reader(String, max_line_units? : Int32, max_entries? : Int32) -> ManifestReader raise FormatError
 
 pub fn parse_declaration(String) -> Declaration raise FormatError
 
@@ -33,13 +49,25 @@ pub fn parse_metadata(String) -> Array[Metadata] raise FormatError
 
 pub fn parse_profile(Json) -> Profile raise FormatError
 
+pub fn parse_receiving_policy(Json) -> ReceivingPolicy raise FormatError
+
+pub fn parse_snapshot(Json) -> BagSnapshot raise FormatError
+
+pub fn parse_transfer_options(Json) -> TransferOptions raise FormatError
+
 pub fn payload_oxum(Array[FileRecord]) -> String raise FormatError
 
 pub fn plan_fetch(BagView) -> Array[FetchEntry] raise FormatError
 
+pub fn plan_transfer(BagView, TransferOptions) -> TransferPlan raise FormatError
+
 pub fn plan_upgrade(BagView, Array[Algorithm]) -> UpgradePlan raise FormatError
 
 pub fn profile_path_matches(String, String) -> Bool
+
+pub fn receiving_policy(String) -> ReceivingPolicy
+
+pub fn receiving_policy_document(ReceivingPolicy) -> Json raise FormatError
 
 pub fn render_fetch(Array[FetchEntry]) -> String raise FormatError
 
@@ -47,9 +75,19 @@ pub fn render_manifest(Array[Entry]) -> String raise FormatError
 
 pub fn render_metadata(Array[Metadata]) -> String raise FormatError
 
+pub fn revalidate_snapshot(BagSnapshot, BagView) -> PreservationReport raise FormatError
+
+pub fn snapshot_document(BagSnapshot) -> Json raise FormatError
+
+pub fn transfer_options() -> TransferOptions
+
 pub fn validate(BagView) -> Report
 
 pub fn validate_profile(BagView, Profile) -> ProfileReport
+
+pub fn verify_delivery(BagView, BagView, DeliveryMode) -> DeliveryReport
+
+pub fn verify_snapshot_inventory(BagSnapshot, Array[FileRecord], Array[String]) -> SnapshotVerification raise FormatError
 
 // Errors
 pub(all) suberror FormatError {
@@ -60,6 +98,14 @@ pub fn FormatError::not_equal(Self, Self) -> Bool
 pub fn FormatError::to_repr(Self) -> @debug.Repr
 
 // Types and methods
+pub(all) struct AcceptanceReport {
+  accepted : Bool
+  policy : String
+  bag : Report
+  diagnostics : Array[Diagnostic]
+} derive(ToJson)
+pub fn AcceptanceReport::to_json(Self) -> Json
+
 pub(all) enum Algorithm {
   Md5
   Sha1
@@ -72,6 +118,35 @@ pub fn Algorithm::name(Self) -> String
 pub fn Algorithm::not_equal(Self, Self) -> Bool
 pub fn Algorithm::to_repr(Self) -> @debug.Repr
 
+pub(all) struct AuditSummary {
+  manifest_count : Int32
+  expected_files : Int32
+  missing_files : Int32
+  mismatched_checksums : Int32
+  unavailable_checksums : Int32
+  unprotected_tags : Int32
+  pending_fetches : Int32
+  verified_algorithms : Array[String]
+} derive(ToJson)
+pub fn AuditSummary::to_json(Self) -> Json
+
+pub(all) struct BagAudit {
+  report : Report
+  summary : AuditSummary
+  files : Array[FileAudit]
+  located_diagnostics : Array[LocatedDiagnostic]
+} derive(ToJson)
+pub fn BagAudit::to_json(Self) -> Json
+
+pub(all) struct BagSnapshot {
+  label : String
+  bag_version : String
+  encoding : String
+  directories : Array[String]
+  files : Array[FileRecord]
+  metadata : Array[Metadata]
+}
+
 pub(all) struct BagView {
   files : Array[FileRecord]
   directories : Array[String]
@@ -79,6 +154,36 @@ pub(all) struct BagView {
 } derive(@debug.Debug, @json.FromJson)
 pub fn BagView::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
 pub fn BagView::to_repr(Self) -> @debug.Repr
+
+pub(all) struct ChecksumEvidence {
+  manifest : String
+  algorithm : String
+  expected : String
+  observed : String?
+  status : String
+} derive(ToJson)
+pub fn ChecksumEvidence::to_json(Self) -> Json
+
+pub(all) struct CollectionItem {
+  identifier : String
+  view : BagView
+}
+
+pub(all) struct CollectionReport {
+  accepted : Bool
+  accepted_bags : Int32
+  rejected_bags : Int32
+  payload_files : Int64
+  payload_bytes : Int64
+  items : Array[CollectionResult]
+} derive(ToJson)
+pub fn CollectionReport::to_json(Self) -> Json
+
+pub(all) struct CollectionResult {
+  identifier : String
+  acceptance : AcceptanceReport
+} derive(ToJson)
+pub fn CollectionResult::to_json(Self) -> Json
 
 pub(all) struct Declaration {
   version : String
@@ -88,6 +193,24 @@ pub fn Declaration::equal(Self, Self) -> Bool
 pub fn Declaration::not_equal(Self, Self) -> Bool
 pub fn Declaration::to_repr(Self) -> @debug.Repr
 
+pub(all) enum DeliveryMode {
+  ExactCopy
+  CompleteFetch
+} derive(Eq)
+pub fn DeliveryMode::equal(Self, Self) -> Bool
+pub fn DeliveryMode::not_equal(Self, Self) -> Bool
+
+pub(all) struct DeliveryReport {
+  accepted : Bool
+  mode : String
+  source : Report
+  received : Report
+  preserved_files : Int32
+  completed_files : Int32
+  diagnostics : Array[Diagnostic]
+} derive(ToJson)
+pub fn DeliveryReport::to_json(Self) -> Json
+
 pub(all) struct Diagnostic {
   severity : Severity
   code : String
@@ -96,6 +219,14 @@ pub(all) struct Diagnostic {
 } derive(ToJson, @debug.Debug)
 pub fn Diagnostic::to_json(Self) -> Json
 pub fn Diagnostic::to_repr(Self) -> @debug.Repr
+
+pub(all) struct DiagnosticGroup {
+  code : String
+  errors : Int32
+  warnings : Int32
+  paths : Array[String]
+} derive(ToJson)
+pub fn DiagnosticGroup::to_json(Self) -> Json
 
 pub(all) struct Entry {
   path : String
@@ -115,6 +246,28 @@ pub fn FetchEntry::not_equal(Self, Self) -> Bool
 pub fn FetchEntry::to_json(Self) -> Json
 pub fn FetchEntry::to_repr(Self) -> @debug.Repr
 
+pub(all) struct FileAudit {
+  path : String
+  payload : Bool
+  present : Bool
+  size : Int64?
+  checksums : Array[ChecksumEvidence]
+  integrity_verified : Bool
+} derive(ToJson)
+pub fn FileAudit::to_json(Self) -> Json
+
+pub(all) struct FileChange {
+  path : String
+  kind : String
+  payload : Bool
+  before_size : Int64?
+  after_size : Int64?
+  compared_algorithms : Array[String]
+  added_algorithms : Array[String]
+  removed_algorithms : Array[String]
+} derive(ToJson)
+pub fn FileChange::to_json(Self) -> Json
+
 pub(all) struct FileRecord {
   path : String
   size : Int64
@@ -123,6 +276,14 @@ pub(all) struct FileRecord {
 pub fn FileRecord::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
 pub fn FileRecord::to_json(Self) -> Json
 pub fn FileRecord::to_repr(Self) -> @debug.Repr
+
+pub(all) struct LocatedDiagnostic {
+  path : String
+  line : Int32
+  code : String
+  message : String
+} derive(ToJson)
+pub fn LocatedDiagnostic::to_json(Self) -> Json
 
 pub(all) struct Manifest {
   name : String
@@ -134,6 +295,30 @@ pub fn Manifest::equal(Self, Self) -> Bool
 pub fn Manifest::not_equal(Self, Self) -> Bool
 pub fn Manifest::to_repr(Self) -> @debug.Repr
 
+pub(all) struct ManifestInspection {
+  name : String
+  parsed_entries : Array[Entry]
+  diagnostics : Array[LocatedDiagnostic]
+}
+
+pub struct ManifestReader {
+  name : String
+  alg : Algorithm
+  tag : Bool
+  max_line_units : Int32?
+  max_entries : Int32?
+  entries : Array[Entry]
+  seen : Map[String, Bool]
+  mut buffer : StringBuilder
+  mut buffer_units : Int32
+  mut line : Int32
+  mut after_cr : Bool
+  mut finished : Bool
+  mut failure : String?
+}
+pub fn ManifestReader::feed(Self, String) -> Unit raise FormatError
+pub fn ManifestReader::finish(Self) -> Manifest raise FormatError
+
 pub(all) struct Metadata {
   label : String
   value : String
@@ -144,6 +329,13 @@ pub fn Metadata::not_equal(Self, Self) -> Bool
 pub fn Metadata::to_json(Self) -> Json
 pub fn Metadata::to_repr(Self) -> @debug.Repr
 
+pub(all) struct MetadataChange {
+  label : String
+  before_values : Array[String]
+  after_values : Array[String]
+} derive(ToJson)
+pub fn MetadataChange::to_json(Self) -> Json
+
 pub(all) struct MetadataRule {
   label : String
   required : Bool
@@ -151,6 +343,21 @@ pub(all) struct MetadataRule {
   values : Array[String]
 } derive(@debug.Debug)
 pub fn MetadataRule::to_repr(Self) -> @debug.Repr
+
+pub(all) struct PathBudget {
+  pattern : String
+  max_files : Int64?
+  max_bytes : Int64?
+}
+
+pub(all) struct PreservationReport {
+  preserved : Bool
+  bag : Report
+  inventory : SnapshotVerification
+  metadata : Array[MetadataChange]
+  declaration_matches : Bool
+} derive(ToJson)
+pub fn PreservationReport::to_json(Self) -> Json
 
 pub(all) struct Profile {
   identifier : String
@@ -181,6 +388,24 @@ pub(all) struct ProfileReport {
 pub fn ProfileReport::to_json(Self) -> Json
 pub fn ProfileReport::to_repr(Self) -> @debug.Repr
 
+pub(all) struct ReceivingPolicy {
+  name : String
+  payload_algorithms : Array[String]
+  tag_algorithms : Array[String]
+  forbid_legacy : Bool
+  require_tag_protection : Bool
+  require_portable : Bool
+  allow_empty : Bool
+  allow_fetch : Bool
+  max_payload_files : Int64?
+  max_payload_bytes : Int64?
+  max_file_bytes : Int64?
+  max_tag_bytes : Int64?
+  max_path_depth : Int64?
+  max_manifest_entries : Int64?
+  path_budgets : Array[PathBudget]
+}
+
 pub(all) struct Report {
   complete : Bool
   valid : Bool
@@ -201,6 +426,63 @@ pub fn Severity::equal(Self, Self) -> Bool
 pub fn Severity::not_equal(Self, Self) -> Bool
 pub fn Severity::to_json(Self) -> Json
 pub fn Severity::to_repr(Self) -> @debug.Repr
+
+pub(all) struct SnapshotDelta {
+  byte_identical : Bool
+  payload_identical : Bool
+  comparable : Bool
+  unchanged_files : Int32
+  files : Array[FileChange]
+  directories_added : Array[String]
+  directories_removed : Array[String]
+  metadata : Array[MetadataChange]
+  declaration_changed : Bool
+} derive(ToJson)
+pub fn SnapshotDelta::to_json(Self) -> Json
+
+pub(all) struct SnapshotVerification {
+  matches : Bool
+  checked_files : Int32
+  verified_checksums : Int32
+  diagnostics : Array[Diagnostic]
+} derive(ToJson)
+pub fn SnapshotVerification::to_json(Self) -> Json
+
+pub(all) struct TransferBatch {
+  number : Int32
+  reserved_bytes : Int64
+  tasks : Array[TransferTask]
+} derive(ToJson)
+pub fn TransferBatch::to_json(Self) -> Json
+
+pub(all) struct TransferOptions {
+  allowed_schemes : Array[String]
+  max_total_bytes : Int64
+  max_file_bytes : Int64
+  max_batch_bytes : Int64
+  max_batch_files : Int32
+  unknown_size_reservation : Int64?
+}
+
+pub(all) struct TransferPlan {
+  pending_files : Int32
+  known_bytes : Int64
+  reserved_bytes : Int64
+  unknown_sizes : Int32
+  directories_to_create : Array[String]
+  batches : Array[TransferBatch]
+} derive(ToJson)
+pub fn TransferPlan::to_json(Self) -> Json
+
+pub(all) struct TransferTask {
+  path : String
+  url : String
+  scheme : String
+  declared_bytes : Int64?
+  reserved_bytes : Int64
+  checksums : Map[String, String]
+} derive(ToJson)
+pub fn TransferTask::to_json(Self) -> Json
 
 pub(all) struct UpgradePlan {
   payload_manifests : Map[String, String]

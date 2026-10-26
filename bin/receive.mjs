@@ -18,7 +18,7 @@ function checked(...args) {
 
 function options(args) {
   if (args.length < 4) throw new Error('fetch requires SOURCE OUTPUT --allow-origin ORIGIN');
-  const result = { source: args[0], output: args[1], origins: new Set(), maxBytes: 1024 * 1024 * 1024, timeout: 30000, profile: null };
+  const result = { source: args[0], output: args[1], origins: new Set(), maxBytes: 1024 * 1024 * 1024, timeout: 30000, profile: null, policy: null };
   const seen = new Set();
   for (let i = 2; i < args.length; i += 2) {
     const option = args[i], value = args[i + 1];
@@ -42,6 +42,7 @@ function options(args) {
         break;
       }
       case '--profile': result.profile = value; break;
+      case '--policy': result.policy = value; break;
       default: throw new Error(`unknown option: ${option}`);
     }
   }
@@ -127,8 +128,10 @@ export async function receive(args) {
       received.push({ path: entry.path, bytes: String(size), origin: entry.parsed.origin });
     }
     const report = config.profile ? checked('validate', stage, '--profile', config.profile) : checked('validate', stage);
+    const delivery = checked('verify-delivery', config.source, stage, '--complete-fetch');
+    const acceptance = config.policy ? checked('accept', stage, config.policy) : null;
     commit({ root: stage, output: config.output });
-    return { command: 'fetch', published: true, output: config.output, received, report };
+    return { command: 'fetch', published: true, output: config.output, received, report, delivery, acceptance };
   } catch (error) {
     error.staging = stage;
     throw error;

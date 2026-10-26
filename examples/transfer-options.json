@@ -1,0 +1,9 @@
+{
+  "format": "moonbagit-transfer-options/1",
+  "allowed_schemes": ["https"],
+  "max_total_bytes": "1073741824",
+  "max_file_bytes": "536870912",
+  "max_batch_bytes": "536870912",
+  "max_batch_files": "16",
+  "unknown_size_reservation": "536870912"
+}

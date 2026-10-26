@@ -7,9 +7,11 @@ badge or a local dependency override, when repeating the checks.
 ## Purpose and adjacent capabilities
 
 MoonBagIt reads and writes the existing RFC 8493 BagIt directory format.
-It does not introduce another JSON evidence-pack format or snapshot database.
+It does not replace the standard with a JSON evidence pack or backup database.
 The deliverable is interoperable `bagit.txt`, `data/`, payload manifests,
 optional metadata and tag manifests, plus receiving-profile checks.
+Optional local preservation records in 0.4.0 support later verification; they
+are not required by a bag's reader and do not replace independent BagIt tests.
 
 There is real overlap in directory scanning and checksums with generic
 evidence/manifest tools (for example
@@ -38,6 +40,16 @@ MoonBit `receive.mbt` owns fetch preflight rules and `uri.mbt` owns URI syntax.
 It is not the implementation of BagIt rules. The core checks inventory
 structure, but trusts the caller to supply accurate file bytes and hashes;
 it is not a new cryptographic algorithm or a hostile-filesystem sandbox.
+
+The preservation layer is also MoonBit: `manifest_stream.mbt` implements
+incremental input and located diagnostics; `audit.mbt` explains checksum
+evidence; `snapshot.mbt` and `revalidation.mbt` implement saved-record comparison;
+`policy.mbt` implements operational receiving decisions; `transfer.mbt` plans
+offline bounded batches; `delivery.mbt` verifies unchanged handoffs and
+independent per-bag collection decisions. `document.mbt` supplies strict
+versioned JSON and exact integer parsing shared by these APIs. The CLI exposes
+these functions, and real HTTP receipt calls the handoff gate before publishing.
+See [PRESERVATION.md](PRESERVATION.md) for contracts and actual runnable commands.
 
 ## Evidence by requirement
 

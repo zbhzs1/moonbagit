@@ -174,6 +174,118 @@ fn run(args : Array[String]) -> Json raise {
     raise @bag.Invalid("expected create or validate; use --help")
   }
   match args[0] {
+    "audit" => {
+      guard args.length() == 2 else { raise @bag.Invalid("audit requires BAG") }
+      let audit = @bag.audit_bag(scan(args[1]))
+      if !audit.report.valid {
+        exit_code(1)
+      }
+      audit.to_json()
+    }
+    "snapshot" => {
+      guard args.length() == 2 || (args.length() == 4 && args[2] == "--label") else {
+        raise @bag.Invalid("snapshot requires BAG [--label LABEL]")
+      }
+      let label = if args.length() == 4 { args[3] } else { "" }
+      @bag.snapshot_document(@bag.capture_snapshot(scan(args[1]), label~))
+    }
+    "verify-snapshot" => {
+      guard args.length() == 3 else {
+        raise @bag.Invalid("verify-snapshot requires BAG SNAPSHOT.json")
+      }
+      let expected = @bag.parse_snapshot(host("metadata", { "path": args[2] }))
+      let report = @bag.revalidate_snapshot(expected, scan(args[1]))
+      if !report.preserved {
+        exit_code(1)
+      }
+      report.to_json()
+    }
+    "compare" => {
+      guard args.length() == 3 else {
+        raise @bag.Invalid("compare requires BEFORE.json AFTER.json")
+      }
+      let before = @bag.parse_snapshot(host("metadata", { "path": args[1] }))
+      let after = @bag.parse_snapshot(host("metadata", { "path": args[2] }))
+      let delta = @bag.compare_snapshots(before, after)
+      if !delta.byte_identical {
+        exit_code(1)
+      }
+      delta.to_json()
+    }
+    "accept" => {
+      guard args.length() == 3 else {
+        raise @bag.Invalid("accept requires BAG POLICY.json")
+      }
+      let policy = @bag.parse_receiving_policy(
+        host("metadata", { "path": args[2] }),
+      )
+      let report = @bag.evaluate_receiving_policy(scan(args[1]), policy)
+      if !report.accepted {
+        exit_code(1)
+      }
+      report.to_json()
+    }
+    "verify-delivery" => {
+      guard args.length() == 3 ||
+        (args.length() == 4 && args[3] == "--complete-fetch") else {
+        raise @bag.Invalid(
+          "verify-delivery requires SOURCE RECEIVED [--complete-fetch]",
+        )
+      }
+      let mode = if args.length() == 4 {
+        @bag.CompleteFetch
+      } else {
+        @bag.ExactCopy
+      }
+      let report = @bag.verify_delivery(scan(args[1]), scan(args[2]), mode)
+      if !report.accepted {
+        exit_code(1)
+      }
+      report.to_json()
+    }
+    "transfer-plan" => {
+      guard args.length() == 3 else {
+        raise @bag.Invalid("transfer-plan requires BAG OPTIONS.json")
+      }
+      let options = @bag.parse_transfer_options(
+        host("metadata", { "path": args[2] }),
+      )
+      @bag.plan_transfer(scan(args[1]), options).to_json()
+    }
+    "collection" => {
+      guard args.length() == 3 else {
+        raise @bag.Invalid("collection requires BAGS.json POLICY.json")
+      }
+      let input = host("metadata", { "path": args[1] })
+      let items : Array[@bag.CollectionItem] = []
+      match input {
+        Array(bags) =>
+          for bag in bags {
+            guard bag is Object(fields) && fields.length() == 2 else {
+              raise @bag.Invalid(
+                "collection items allow exactly identifier and path",
+              )
+            }
+            match bag {
+              { "identifier": String(identifier), "path": String(path), .. } =>
+                items.push({ identifier, view: scan(path), })
+              _ =>
+                raise @bag.Invalid(
+                  "each collection item requires identifier and path",
+                )
+            }
+          }
+        _ => raise @bag.Invalid("collection input must be an array")
+      }
+      let policy = @bag.parse_receiving_policy(
+        host("metadata", { "path": args[2] }),
+      )
+      let report = @bag.evaluate_collection(items, policy)
+      if !report.accepted {
+        exit_code(1)
+      }
+      report.to_json()
+    }
     "fetch-plan" => {
       guard args.length() == 2 else {
         raise @bag.Invalid("fetch-plan requires BAG")
@@ -226,8 +338,18 @@ fn main {
       )
       println("node bin/moonbagit.mjs validate BAG [--profile FILE.json]")
       println("node bin/moonbagit.mjs lint BAG")
+      println("node bin/moonbagit.mjs audit BAG")
+      println("node bin/moonbagit.mjs snapshot BAG [--label LABEL]")
+      println("node bin/moonbagit.mjs verify-snapshot BAG SNAPSHOT.json")
+      println("node bin/moonbagit.mjs compare BEFORE.json AFTER.json")
+      println("node bin/moonbagit.mjs accept BAG POLICY.json")
       println(
-        "node bin/moonbagit.mjs fetch SOURCE OUTPUT --allow-origin ORIGIN [--max-bytes N] [--timeout-ms N] [--profile FILE.json]",
+        "node bin/moonbagit.mjs verify-delivery SOURCE RECEIVED [--complete-fetch]",
+      )
+      println("node bin/moonbagit.mjs transfer-plan BAG OPTIONS.json")
+      println("node bin/moonbagit.mjs collection BAGS.json POLICY.json")
+      println(
+        "node bin/moonbagit.mjs fetch SOURCE OUTPUT --allow-origin ORIGIN [--max-bytes N] [--timeout-ms N] [--profile FILE.json] [--policy POLICY.json]",
       )
       println(
         "node bin/moonbagit.mjs upgrade SOURCE OUTPUT --sha256|--sha512|--both",

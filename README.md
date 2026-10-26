@@ -51,7 +51,7 @@ example-bag/
 Validation returns JSON with `complete`, `valid`, payload counts, verified
 checksum counts and diagnostics containing `code`, `path`, `message` and
 `severity`. Int64 counts use decimal strings to preserve integer precision.
-Exit codes: `0` valid/success, `1` invalid or unsupported bag, `2` I/O or CLI
+Exit codes: `0` valid/success, `1` a negative validation/comparison/acceptance decision, `2` I/O or CLI
 failure. Invalid UTF-8 is an I/O decoding failure, not silently replaced text.
 
 Changing payload bytes without changing its length leaves the structure
@@ -90,6 +90,16 @@ the host's responsibility and cannot be authenticated by these structural checks
 `validate` does not read files or compute hashes itself. The CLI supplies these
 through a small Node.js adapter using streaming `node:crypto` hashes; there is
 no custom cryptographic implementation. The pure core also runs on WASM-GC.
+
+The 0.4.0 preservation APIs add incremental manifest input with source-line
+diagnostics, per-file checksum evidence, local snapshots and periodic
+revalidation, snapshot differences, receiving resource/security policy,
+offline transfer batching, exact-copy/fetch-completion handoff checks and
+collection acceptance. These extend the BagIt workflows, not the BagIt format.
+See [preservation and receiving](docs/PRESERVATION.md) for the public contracts,
+wire schemas, runnable commands and trust boundaries. Saved JSON snapshots are
+optional local audit records; interoperable BagIt directories remain the primary
+output and no custom JSON document is required to read a bag.
 
 Creation uses two stages: `create_tags` generates the declaration, metadata and
 payload manifests; after the caller encodes standard tags using the declaration

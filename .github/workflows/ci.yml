@@ -58,6 +58,8 @@ jobs:
         run: python scripts/interop_report.py --bagit-path .interop/upstream --source-id LibraryOfCongress/bagit-python@4bd2713cedbe1f8e634567c20ef0dded9622011d --require-native-1 --output interop-evidence/native-1.0
       - name: BagIt required behavior and authorized end-to-end receipt
         run: python scripts/rfc8493.py --bagit-path .interop/upstream
+      - name: Preservation snapshots policies and handoff regressions
+        run: python scripts/preservation.py
       - name: Upload reports and actual generated bags for independent review
         if: always()
         uses: actions/upload-artifact@v4
