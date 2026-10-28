@@ -9,7 +9,7 @@ FILES = {
 version = "0.1.0"
 preferred_target = "wasm-gc"
 import {
-  "zbhzs1/moonbagit@0.4.0",
+  "zbhzs1/moonbagit@0.4.1",
 }
 ''',
     "moon.pkg": '''import {
@@ -111,7 +111,7 @@ pkgtype(kind: "executable")
     let options = @bag.parse_transfer_options({"format": "moonbagit-transfer-options/1"})
     assert_eq(@bag.plan_transfer(fetch_view, options).pending_files, 0)
     assert_true(@bag.evaluate_collection([{identifier: "one", view}], policy).accepted)
-    println("Mooncakes consumer 0.4.0: published format, preservation, incremental input, policy, transfer and delivery APIs passed")
+    println("Mooncakes consumer 0.4.1: published format, preservation, incremental input, policy, transfer and delivery APIs passed")
   } catch {
     error => abort(error.to_string())
   }
@@ -131,7 +131,7 @@ with tempfile.TemporaryDirectory(prefix="moonbagit-consumer-") as temporary:
         print(result.stderr, end="", file=sys.stderr)
         result.check_returncode()
         if args[0] == "run":
-            assert "Mooncakes consumer 0.4.0" in result.stdout, result.stdout
+            assert "Mooncakes consumer 0.4.1" in result.stdout, result.stdout
     package = root / ".mooncakes" / "zbhzs1" / "moonbagit"
     assert package.is_dir() and not package.is_symlink(), "registry package was not installed"
     print("PASS: fresh published-package consumer on JS and WASM-GC")

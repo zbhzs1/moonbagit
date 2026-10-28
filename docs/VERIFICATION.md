@@ -55,7 +55,7 @@ measurement above is historical, not a claim that it was repeated for 0.2.1.
 
 ## Remote and release evidence
 
-### Version 0.4.1 source checks
+### Version 0.4.1
 
 The October 28 recheck reproduced a valid-input failure before fixing it:
 generic UTF-16 with a big-endian BOM and U+00D8 in a filename was incorrectly
@@ -72,6 +72,34 @@ The pinned native Python matrix passed all six positives and eighteen negative
 controls, and all five unmodified external fixtures produced their expected
 decisions. These local skips do not replace full Linux/privileged Windows CI.
 The MoonBit library APIs and implementation LOC are unchanged from 0.4.0.
+
+Published source/tag `v0.4.1` is
+`7f4668781309fd88ce9895ab9ba9bf9771f1cad8`.
+[Source CI 40654045645](https://github.com/zbhzs1/moonbagit/actions/runs/40654045645)
+passed on both Linux and Windows. The Windows job log confirms 133 tests on
+each backend, all 18 RFC/receipt cases with only the POSIX filename skip,
+16 preservation cases, 37 CLI cases with only the newline-filename skip,
+both independent six-positive/eighteen-negative matrices and five external
+fixtures. This source run still consumed registry 0.4.0, not a prerelease.
+
+Mooncakes formally published `zbhzs1/moonbagit@0.4.1` with `200 OK` at
+2026-10-28T08:06:04.953910Z. Its public registry record is MIT and not yanked;
+the recorded checksum equals the submitted ZIP SHA-256:
+`e622a4555bfd4999c359b005cabaf5fb7eb37e066f1f8073140cd97eea6c45f3`.
+A fresh temporary consumer downloaded that exact registry version without path
+substitution and passed strict JS checking and both JS/WASM-GC runs. The updated
+consumer script reproduces this release-specific check in subsequent main CI.
+Both README library-example commands also passed locally on October 28 and
+are now executed explicitly in the Linux/Windows workflow.
+These consumer, README and publication-evidence changes postdate the immutable
+ZIP; the release tag remains on the actual published source. The temporary
+isolated toolchain credential copy was deleted; original user credentials were
+left unchanged.
+
+The October 28 1,000-file benchmark used 1,024,000 payload bytes and verified
+2,008 digests; creation took 5.551 seconds and separate validation 1.351 seconds
+on the local Windows/Node/Python environment above. This is one observed run,
+not a production throughput guarantee.
 
 ### Version 0.4.0
 

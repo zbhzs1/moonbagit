@@ -70,7 +70,7 @@ It also exports `parse_profile`, `validate_profile`, `plan_upgrade`, and
 Add the published library to an independent MoonBit project:
 
 ```powershell
-moon add zbhzs1/moonbagit@0.4.0
+moon add zbhzs1/moonbagit@0.4.1
 ```
 
 Add `"zbhzs1/moonbagit" @bag` to the consumer package's `import` block. Then call
