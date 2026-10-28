@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.1 - 2026-10-28
+
+- Honor either BOM-selected byte order for tags declared as generic UTF-16.
+  Previously ICU treated that generic label as little endian and could reject
+  valid big-endian text, including filenames containing U+00D8.
+- Add a real-filesystem independent Python codec fixture for both byte orders,
+  digest-preserving validation/upgrade and independent post-upgrade checks.
+  Keep strict rejection of malformed surrogates in either byte order.
+- Retain the 133 MoonBit core tests and existing interoperability matrices;
+  the RFC/receipt suite now has 18 scenarios. There are no MoonBit API changes.
+
 ## 0.4.0 - 2026-10-26
 
 - Add a stateful decoded-text manifest reader with cross-chunk CRLF handling,

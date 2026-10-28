@@ -75,8 +75,12 @@ export function decodeTag(bytes, encoding) {
   // ICU rejects malformed sequences where available; iconv provides IANA legacy encodings.
   // Round-trip validation below also protects codecs not implemented by ICU.
   let decoded;
+  // WHATWG's generic UTF-16 label means little endian; BagIt's BOM selects either.
+  const strictEncoding = normalized === 'utf16'
+    ? (bytes[0] === 0xfe ? 'utf-16be' : 'utf-16le')
+    : encoding;
   try {
-    decoded = new TextDecoder(encoding, { fatal: true, ignoreBOM: false }).decode(bytes);
+    decoded = new TextDecoder(strictEncoding, { fatal: true, ignoreBOM: false }).decode(bytes);
   } catch (error) {
     if (!(error instanceof RangeError)) throw error;
   }

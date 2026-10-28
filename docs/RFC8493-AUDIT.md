@@ -7,6 +7,12 @@ target for 0.3.0 is RFC 8493 sections 2 and 3. Optional elements are checked whe
 present; absence of optional metadata, tag manifests or fetch.txt is valid.
 An implementation self-audit is not organizer approval or a formal proof.
 
+The 0.4.1 host correction explicitly selects UTF-16 byte order from its BOM
+before strict decoding. The regression covers both byte orders, validation of
+independently encoded bags and upgrades checked by the unmodified Python tool.
+Malformed surrogates remain rejected; this fixes a valid-input rejection rather
+than weakening the mandatory-format target.
+
 ## Normative behavior and evidence
 
 | RFC 8493 clause | Delivered behavior | Code and executable evidence |

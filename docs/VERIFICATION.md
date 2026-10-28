@@ -1,7 +1,9 @@
 # Observed verification
 
-Updated: 2026-10-26. Source tests and commands are in this repository; this document
-does not promise full RFC conformance, production performance or committee approval.
+Updated: 2026-10-28. The format target is BagIt 1.0 mandatory behavior, mapped to
+implementation and executable evidence in [RFC8493-AUDIT.md](RFC8493-AUDIT.md).
+These observed checks are not a formal certification, an exhaustive proof,
+a production performance guarantee or committee approval.
 
 ## Local checks
 
@@ -52,6 +54,24 @@ with a valid result on the same local Node/Python versions. The 10,000-file
 measurement above is historical, not a claim that it was repeated for 0.2.1.
 
 ## Remote and release evidence
+
+### Version 0.4.1 source checks
+
+The October 28 recheck reproduced a valid-input failure before fixing it:
+generic UTF-16 with a big-endian BOM and U+00D8 in a filename was incorrectly
+decoded by ICU as little endian. The host now selects the strict decoder from
+the BOM. The new independent Python codec fixture checks both byte orders,
+read-only validation, preserved original tags during upgrade, and independent
+validation of the upgraded bags. Malformed surrogate rejection remains strict.
+
+Locally, formatting, strict JS checking, JS build and the 133 core tests on
+each JS/WASM-GC target passed. All 18 RFC/real-HTTP scenarios passed where
+applicable (one POSIX filename skip on Windows); the 16 preservation cases and
+37 CLI scenarios also passed (four local Windows filename/symlink skips).
+The pinned native Python matrix passed all six positives and eighteen negative
+controls, and all five unmodified external fixtures produced their expected
+decisions. These local skips do not replace full Linux/privileged Windows CI.
+The MoonBit library APIs and implementation LOC are unchanged from 0.4.0.
 
 ### Version 0.4.0
 

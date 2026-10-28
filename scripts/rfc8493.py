@@ -76,7 +76,7 @@ class Standard(unittest.TestCase):
     def tearDown(self):
         self.temp.cleanup()
 
-    def independent(self, encoding='utf-8', algorithms=('sha256', 'sha512'), name='source', filename='nested/a b.bin'):
+    def independent(self, encoding='utf-8', algorithms=('sha256', 'sha512'), name='source', filename='nested/a b.bin', utf16_big_endian=False):
         root = self.root / name
         root.mkdir()
         file = root / filename
@@ -85,20 +85,26 @@ class Standard(unittest.TestCase):
         instance = bagit.make_bag(str(root), checksums=list(algorithms))
         self.assertEqual(instance.version_info, (1, 0), 'Use the pinned native 1.0 producer')
         if encoding != 'utf-8':
+            def encode_tag(text):
+                if utf16_big_endian:
+                    self.assertEqual(encoding, 'utf-16')
+                    return b'\xfe\xff' + text.encode('utf-16-be')
+                return text.encode(encoding)
+
             # Upstream make_bag hardcodes UTF-8 in bagit.txt even when its encoding
             # argument changes manifests. Use an explicitly labelled codec fixture:
             # transcode original Python-produced tag text and independently rehash
             # the raw bytes with stdlib hashlib. Do not patch the external tool.
             for tag in root.glob('*.txt'):
                 if tag.name != 'bagit.txt' and not tag.name.startswith('tagmanifest-'):
-                    tag.write_bytes(tag.read_text(encoding='utf-8').encode(encoding))
+                    tag.write_bytes(encode_tag(tag.read_text(encoding='utf-8')))
             (root / 'bagit.txt').write_bytes(f'BagIt-Version: 1.0\nTag-File-Character-Encoding: {encoding}\n'.encode('utf-8'))
             for algorithm in algorithms:
                 lines = []
                 for tag in sorted(root.glob('*.txt')):
                     if not tag.name.startswith('tagmanifest-'):
                         lines.append(hashlib.new(algorithm, tag.read_bytes()).hexdigest() + '  ' + tag.name + '\n')
-                (root / f'tagmanifest-{algorithm}.txt').write_bytes(''.join(lines).encode(encoding))
+                (root / f'tagmanifest-{algorithm}.txt').write_bytes(encode_tag(''.join(lines)))
             instance = bagit.Bag(str(root))
         self.assertTrue(instance.validate())
         return root
@@ -144,6 +150,21 @@ class Standard(unittest.TestCase):
             self.assertTrue(bagit.Bag(str(output)).validate())
             self.assertEqual((output / 'data/file.bin').read_bytes(), BODY)
 
+    def test_generic_utf16_uses_bom_byte_order_for_validation_and_upgrade(self):
+        for i, big_endian in enumerate((False, True)):
+            with self.subTest(big_endian=big_endian):
+                root = self.independent(encoding='utf-16', algorithms=('sha256',),
+                                        name=f'bom-{i}', filename='\u00d8.bin',
+                                        utf16_big_endian=big_endian)
+                before = snapshot(root)
+                self.assertTrue(moon('validate', root)['valid'])
+                output = self.root / f'upgraded-bom-{i}'
+                self.assertTrue(moon('upgrade', root, output, '--sha512')['report']['valid'])
+                self.assertTrue(bagit.Bag(str(output)).validate())
+                self.assertEqual(snapshot(root), before)
+                for name in ('bagit.txt', 'bag-info.txt', 'manifest-sha256.txt'):
+                    self.assertEqual((root / name).read_bytes(), (output / name).read_bytes())
+
     def test_bad_codec_or_unrepresentable_name_never_publishes(self):
         source = self.root / 'original'
         source.mkdir()
@@ -156,7 +177,8 @@ class Standard(unittest.TestCase):
     def test_codecs_reject_malformed_bytes_without_replacing_valid_replacement_characters(self):
         code = '''import { decodeTag } from './bin/host.mjs';
         for (const [encoding, hex] of [['UTF-8','ff'], ['US-ASCII','80'],
-          ['UTF-16','6100'], ['UTF-16LE','61'], ['UTF-16LE','00d8'], ['Shift_JIS','81']]) {
+          ['UTF-16','6100'], ['UTF-16LE','61'], ['UTF-16LE','00d8'],
+          ['UTF-16','feffd800'], ['UTF-16','fffe00d8'], ['Shift_JIS','81']]) {
           let rejected = false;
           try { decodeTag(Buffer.from(hex,'hex'), encoding); } catch { rejected = true; }
           if (!rejected) throw new Error(`malformed ${encoding} accepted`);
